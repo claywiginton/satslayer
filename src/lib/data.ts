@@ -7,7 +7,7 @@ export const CONFIG = {
   startWeight: 129,       // kg
   goalWeight: 95,          // kg
   defaultUnit: 'kg' as WeightUnit,
-  calorieTarget: 2000,
+  calorieTarget: 2500,
   startDate: '2026-04-01',
   totalSats: 2_000_000,
 
@@ -48,11 +48,12 @@ export function formatWeight(value: number, unit: WeightUnit): string {
 }
 
 export type HabitType = 'steps' | 'workout' | 'calories';
+export type StreakMode = 'daily' | 'weekly'; // daily = every day, weekly = X per calendar week
 
-export const HABITS: { type: HabitType; label: string; icon: string; description: string; color: string; inputType: 'number' | 'boolean'; unit: string; threshold: number; thresholdDir: 'gte' | 'lte' }[] = [
-  { type: 'steps', label: 'Steps', icon: '👟', description: 'Hit 8,000 steps', color: '#22c55e', inputType: 'number', unit: 'steps', threshold: 8000, thresholdDir: 'gte' },
-  { type: 'workout', label: 'Workout', icon: '💪', description: '30+ min exercise', color: '#f7931a', inputType: 'boolean', unit: '', threshold: 1, thresholdDir: 'gte' },
-  { type: 'calories', label: 'Calories', icon: '🍽', description: `Under ${CONFIG.calorieTarget.toLocaleString()} cal`, color: '#a855f7', inputType: 'number', unit: 'cal', threshold: CONFIG.calorieTarget, thresholdDir: 'lte' },
+export const HABITS: { type: HabitType; label: string; icon: string; description: string; color: string; inputType: 'number' | 'boolean'; unit: string; threshold: number; thresholdDir: 'gte' | 'lte'; streakMode: StreakMode; weeklyTarget?: number }[] = [
+  { type: 'steps', label: 'Steps', icon: '👟', description: 'Hit 10,000 steps', color: '#22c55e', inputType: 'number', unit: 'steps', threshold: 10000, thresholdDir: 'gte', streakMode: 'daily' },
+  { type: 'workout', label: 'Workout', icon: '💪', description: '30+ min · 5× per week', color: '#f7931a', inputType: 'boolean', unit: '', threshold: 1, thresholdDir: 'gte', streakMode: 'weekly', weeklyTarget: 5 },
+  { type: 'calories', label: 'Calories', icon: '🍽', description: `Under ${CONFIG.calorieTarget.toLocaleString()} cal`, color: '#a855f7', inputType: 'number', unit: 'cal', threshold: CONFIG.calorieTarget, thresholdDir: 'lte', streakMode: 'daily' },
 ];
 
 export interface Milestone {

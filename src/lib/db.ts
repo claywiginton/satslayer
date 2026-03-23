@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import {
-  CONFIG, type HabitType, type DayLog, type WeighIn, type HabitStreak, type PlayerStats,
+  CONFIG, HABITS, type HabitType, type DayLog, type WeighIn, type HabitStreak, type PlayerStats,
   getMultiplier, getSatsForHabit, getTodayStr, calculateWeighInReward, checkMilestones, habitMet,
 } from './data';
 
@@ -98,44 +98,120 @@ export async function saveHabitValue(habit: HabitType, value: number): Promise<b
 
 // ── STREAK CALCULATION ──
 
+// Helper: get ISO week start (Monday) for a date
+function getWeekStart(dateStr: string): string {
+  const d = new Date(dateStr);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday
+  const monday = new Date(d);
+  monday.setDate(diff);
+  return monday.toISOString().split('T')[0];
+}
+
 export function calculateStreaks(logs: DayLog[]): Record<HabitType, { current: number; longest: number }> {
-  const habits: HabitType[] = ['steps', 'workout', 'calories'];
   const result: Record<string, { current: number; longest: number }> = {};
+  const sorted = [...logs].sort((a, b) => a.date.localeCompare(b.date));
+  const today = getTodayStr();
 
-  for (const habit of habits) {
-    let longest = 0;
-    let current = 0;
+  for (const habitConfig of HABITS) {
+    const habit = habitConfig.type;
 
-    const sorted = [...logs].sort((a, b) => a.date.localeCompare(b.date));
+    if (habitConfig.streakMode === 'daily') {
+      // ── DAILY STREAK: must complete every consecutive day ──
+      let longest = 0;
+      let current = 0;
 
-    for (let i = 0; i < sorted.length; i++) {
-      const completed = habitMet(habit, sorted[i][habit]);
-      if (completed) {
-        if (i === 0) {
-          current = 1;
+      for (let i = 0; i < sorted.length; i++) {
+        const completed = habitMet(habit, sorted[i][habit]);
+        if (completed) {
+          if (i === 0) {
+            current = 1;
+          } else {
+            const prevDate = new Date(sorted[i - 1].date);
+            const currDate = new Date(sorted[i].date);
+            const diffDays = Math.round((currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24));
+            current = diffDays === 1 ? current + 1 : 1;
+          }
+          longest = Math.max(longest, current);
         } else {
-          const prevDate = new Date(sorted[i - 1].date);
-          const currDate = new Date(sorted[i].date);
-          const diffDays = Math.round((currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24));
-          current = diffDays === 1 ? current + 1 : 1;
+          current = 0;
         }
-        longest = Math.max(longest, current);
-      } else {
-        current = 0;
       }
-    }
 
-    if (sorted.length > 0) {
-      const lastLog = sorted[sorted.length - 1];
-      const lastDate = new Date(lastLog.date);
-      const today = new Date(getTodayStr());
-      const diffFromToday = Math.round((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
-      if (diffFromToday > 1 || !habitMet(habit, lastLog[habit])) {
-        current = 0;
+      // Verify streak is connected to today or yesterday
+      if (sorted.length > 0) {
+        const lastLog = sorted[sorted.length - 1];
+        const lastDate = new Date(lastLog.date);
+        const todayDate = new Date(today);
+        const diffFromToday = Math.round((todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffFromToday > 1 || !habitMet(habit, lastLog[habit])) {
+          current = 0;
+        }
       }
-    }
 
-    result[habit] = { current, longest };
+      result[habit] = { current, longest };
+
+    } else {
+      // ── WEEKLY STREAK: need X completions per calendar week (Mon-Sun) ──
+      const weeklyTarget = habitConfig.weeklyTarget || 5;
+
+      // Group logs by week (Mon-Sun)
+      const weekMap: Record<string, number> = {};
+      for (const log of sorted) {
+        if (habitMet(habit, log[habit])) {
+          const weekKey = getWeekStart(log.date);
+          weekMap[weekKey] = (weekMap[weekKey] || 0) + 1;
+        }
+      }
+
+      // Get all week starts in order
+      const weekKeys = Object.keys(weekMap).sort();
+
+      // Calculate consecutive weeks that met the target
+      let longest = 0;
+      let current = 0;
+
+      for (let i = 0; i < weekKeys.length; i++) {
+        const metTarget = weekMap[weekKeys[i]] >= weeklyTarget;
+        if (metTarget) {
+          if (i === 0) {
+            current = 1;
+          } else {
+            // Check if this is the consecutive next week
+            const prevWeek = new Date(weekKeys[i - 1]);
+            const currWeek = new Date(weekKeys[i]);
+            const diffDays = Math.round((currWeek.getTime() - prevWeek.getTime()) / (1000 * 60 * 60 * 24));
+            current = diffDays === 7 ? current + 1 : 1;
+          }
+          longest = Math.max(longest, current);
+        } else {
+          current = 0;
+        }
+      }
+
+      // Verify current streak: this week or last week must have met target
+      const thisWeekStart = getWeekStart(today);
+      const lastWeekDate = new Date(thisWeekStart);
+      lastWeekDate.setDate(lastWeekDate.getDate() - 7);
+      const lastWeekStart = lastWeekDate.toISOString().split('T')[0];
+
+      const thisWeekCount = weekMap[thisWeekStart] || 0;
+      const lastWeekCount = weekMap[lastWeekStart] || 0;
+
+      // Current week is still in progress — check if last completed week was recent
+      if (weekKeys.length > 0) {
+        const lastCompletedWeek = weekKeys[weekKeys.length - 1];
+        if (lastCompletedWeek !== thisWeekStart && lastCompletedWeek !== lastWeekStart) {
+          current = 0;
+        } else if (lastCompletedWeek === lastWeekStart && lastWeekCount < weeklyTarget) {
+          current = 0;
+        }
+      }
+
+      // Convert weekly streak to "days" equivalent for the multiplier (weeks × 7)
+      // This way the multiplier tiers work the same
+      result[habit] = { current: current * 7, longest: longest * 7 };
+    }
   }
 
   return result as Record<HabitType, { current: number; longest: number }>;

@@ -253,8 +253,8 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
             <div className="card p-4 flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ background: '#f7931a15' }}>💪</div>
               <div>
-                <div className="font-semibold">30+ Min Workout</div>
-                <div className="text-xs text-[var(--text-muted)]">Any exercise — gym, run, bike, swim</div>
+                <div className="font-semibold">Workout 5×/Week</div>
+                <div className="text-xs text-[var(--text-muted)]">30+ min exercise, 5 days per week (Mon-Sun)</div>
               </div>
             </div>
             <div className="card p-4 flex items-center gap-4">

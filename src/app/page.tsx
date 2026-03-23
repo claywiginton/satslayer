@@ -240,6 +240,24 @@ export default function SatSlayer() {
                   const inputVal = habitInputs[habit.type];
                   const meetsThreshold = habit.inputType === 'boolean' || (inputVal && habitMet(habit.type, parseFloat(inputVal)));
 
+                  // Weekly workout counter
+                  const isWeekly = habit.streakMode === 'weekly';
+                  let weeklyCount = 0;
+                  if (isWeekly) {
+                    const now = new Date();
+                    const dayOfWeek = now.getDay();
+                    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+                    const monday = new Date(now);
+                    monday.setDate(now.getDate() + mondayOffset);
+                    const mondayStr = monday.toISOString().split('T')[0];
+                    weeklyCount = dayLogs.filter(d => d.date >= mondayStr && habitMet(habit.type, d[habit.type])).length;
+                  }
+
+                  // For weekly habits, "completed today" means logged today. But streak is weekly.
+                  const streakLabel = isWeekly
+                    ? (streak && streak.currentStreak > 0 ? `${Math.floor(streak.currentStreak / 7)}w · ${streak.multiplier}×` : '')
+                    : (streak && streak.currentStreak > 0 ? `${streak.currentStreak}d · ${streak.multiplier}×` : '');
+
                   return (
                     <div
                       key={habit.type}
@@ -258,9 +276,14 @@ export default function SatSlayer() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold">{habit.label}</span>
-                            {streak && streak.currentStreak > 0 && (
+                            {streakLabel && (
                               <span className="text-[9px] mono px-1.5 py-0.5 rounded" style={{ background: `${habit.color}20`, color: habit.color }}>
-                                {streak.currentStreak}d · {streak.multiplier}×
+                                {streakLabel}
+                              </span>
+                            )}
+                            {isWeekly && (
+                              <span className="text-[9px] mono px-1.5 py-0.5 rounded" style={{ background: weeklyCount >= (habit.weeklyTarget || 5) ? 'rgba(34,197,94,0.2)' : 'var(--bg-elevated)', color: weeklyCount >= (habit.weeklyTarget || 5) ? 'var(--green)' : 'var(--text-muted)' }}>
+                                {weeklyCount}/{habit.weeklyTarget}
                               </span>
                             )}
                           </div>
@@ -291,7 +314,7 @@ export default function SatSlayer() {
                               <input
                                 type="number"
                                 inputMode="numeric"
-                                placeholder={habit.type === 'steps' ? '8000' : '1800'}
+                                placeholder={habit.type === 'steps' ? '10000' : '1800'}
                                 value={inputVal}
                                 onChange={(e) => setHabitInputs(prev => ({ ...prev, [habit.type]: e.target.value }))}
                                 className="flex-1 bg-[var(--bg-card)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm mono text-center focus:outline-none focus:border-[var(--btc)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -344,7 +367,7 @@ export default function SatSlayer() {
                     const loss = s.satsPerCompletion - CONFIG.baseSatsPerHabit;
                     return (
                       <div key={s.type} className="flex items-center justify-between text-xs">
-                        <span className="text-[var(--text-secondary)]">{habitInfo.icon} {habitInfo.label}: {s.currentStreak} days</span>
+                        <span className="text-[var(--text-secondary)]">{habitInfo.icon} {habitInfo.label}: {habitInfo.streakMode === 'weekly' ? `${Math.floor(s.currentStreak / 7)} weeks` : `${s.currentStreak} days`}</span>
                         <span className="mono text-[var(--red)]">−{formatSats(loss)}/day if broken</span>
                       </div>
                     );
@@ -533,9 +556,11 @@ export default function SatSlayer() {
                       <div className="flex-1">
                         <div className="text-xs font-semibold">{habit.label}</div>
                         <div className="flex items-center gap-2 mt-0.5">
-                          <span className="mono text-[10px] px-1.5 py-0.5 rounded" style={{ background: `${habit.color}15`, color: habit.color }}>{s.currentStreak}d</span>
+                          <span className="mono text-[10px] px-1.5 py-0.5 rounded" style={{ background: `${habit.color}15`, color: habit.color }}>
+                            {habit.streakMode === 'weekly' ? `${Math.floor(s.currentStreak / 7)}w` : `${s.currentStreak}d`}
+                          </span>
                           <span className="mono text-[10px] text-[var(--btc)]">{s.multiplier}×</span>
-                          <span className="text-[10px] text-[var(--text-muted)]">Best: {s.longestStreak}d</span>
+                          <span className="text-[10px] text-[var(--text-muted)]">Best: {habit.streakMode === 'weekly' ? `${Math.floor(s.longestStreak / 7)}w` : `${s.longestStreak}d`}</span>
                         </div>
                       </div>
                       <div className="mono text-sm text-[var(--btc)]">{formatSats(s.satsPerCompletion)}</div>
