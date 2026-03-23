@@ -2,101 +2,102 @@
 
 import { useState, useEffect } from 'react';
 import {
-  CONFIG, getChallengeForDay, getCurrentDayNumber, getCurrentWeekNumber,
-  formatSats, satsToUsd, categoryIcons, categoryColors,
-  type DailyChallenge, type PlayerStats, type WeighIn,
+  CONFIG, HABITS, formatSats, satsToUsd, getMultiplier, getSatsForHabit, getNextTier,
+  getDayNumber, getWeekNumber, getTodayStr, calculateWeighInReward,
+  type HabitType, type HabitStreak, type PlayerStats, type WeighIn, type DayLog,
 } from '@/lib/data';
-import { getCompletedChallenges, completeChallenge, getWeighIns, saveWeighIn, getPlayerStats } from '@/lib/db';
+import {
+  getDayLogs, getTodayLog, toggleHabit, logSats, calculateStreaks,
+  getWeighIns, saveWeighIn, getPlayerStats,
+} from '@/lib/db';
 
 export default function SatSlayer() {
-  const [tab, setTab] = useState<'today' | 'weigh-in' | 'history' | 'stats'>('today');
+  const [tab, setTab] = useState<'today' | 'weigh-in' | 'stats'>('today');
   const [stats, setStats] = useState<PlayerStats | null>(null);
-  const [completedDays, setCompletedDays] = useState<Set<number>>(new Set());
+  const [todayLog, setTodayLog] = useState<DayLog | null>(null);
+  const [dayLogs, setDayLogs] = useState<DayLog[]>([]);
   const [weighIns, setWeighIns] = useState<WeighIn[]>([]);
   const [loading, setLoading] = useState(true);
-  const [completing, setCompleting] = useState(false);
-  const [showReward, setShowReward] = useState<number | null>(null);
+  const [toggling, setToggling] = useState<HabitType | null>(null);
+  const [showReward, setShowReward] = useState<{ sats: number; habit: string } | null>(null);
 
-  const dayNumber = getCurrentDayNumber();
-  const weekNumber = getCurrentWeekNumber();
+  const dayNumber = getDayNumber();
+  const weekNumber = getWeekNumber();
 
   useEffect(() => {
-    Promise.all([getPlayerStats(), getCompletedChallenges(), getWeighIns()])
-      .then(([s, c, w]) => {
-        setStats(s);
-        setCompletedDays(c);
-        setWeighIns(w);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error('Failed to load data:', err);
-        // Still show the app with defaults
-        setStats({
-          totalSatsEarned: 0, totalSatsAvailable: CONFIG.totalSats,
-          currentWeight: CONFIG.startWeight, startWeight: CONFIG.startWeight,
-          goalWeight: CONFIG.goalWeight, totalLost: 0, currentStreak: 0,
-          longestStreak: 0, challengesCompleted: 0, challengesTotal: 365,
-          weighInsLogged: 0, milestonesHit: [], comebackPool: 0,
-        });
+    Promise.all([getPlayerStats(), getTodayLog(), getDayLogs(), getWeighIns()])
+      .then(([s, t, d, w]) => { setStats(s); setTodayLog(t); setDayLogs(d); setWeighIns(w); setLoading(false); })
+      .catch(() => {
+        setStats({ totalSatsEarned: 0, currentWeight: CONFIG.startWeight, totalLost: 0, streaks: HABITS.map((h) => ({ type: h.type, currentStreak: 0, multiplier: 1, satsPerCompletion: 500, longestStreak: 0 })), totalDaysLogged: 0, weighInsLogged: 0, milestonesHit: [] });
         setLoading(false);
       });
   }, []);
 
-  const todayChallenge = getChallengeForDay(dayNumber);
-  const todayCompleted = completedDays.has(dayNumber);
+  const handleToggle = async (habit: HabitType) => {
+    if (toggling) return;
+    const currentVal = todayLog ? todayLog[habit] : false;
+    if (currentVal) return; // Don't allow un-completing
 
-  const handleComplete = async () => {
-    if (todayCompleted || completing) return;
-    setCompleting(true);
-    const ok = await completeChallenge(dayNumber, CONFIG.dailySatsBase);
+    setToggling(habit);
+    const ok = await toggleHabit(habit, true);
     if (ok) {
-      setCompletedDays((prev) => new Set([...prev, dayNumber]));
-      setShowReward(CONFIG.dailySatsBase);
-      setTimeout(() => setShowReward(null), 3000);
-      const s = await getPlayerStats();
-      setStats(s);
+      // Calculate sats for this completion
+      const streakData = calculateStreaks([...dayLogs, { date: getTodayStr(), steps: habit === 'steps' || (todayLog?.steps || false), workout: habit === 'workout' || (todayLog?.workout || false), calories: habit === 'calories' || (todayLog?.calories || false) }]);
+      const sats = getSatsForHabit(streakData[habit].current);
+      await logSats(getTodayStr(), habit, sats);
+
+      // Refresh
+      const [s, t, d] = await Promise.all([getPlayerStats(), getTodayLog(), getDayLogs()]);
+      setStats(s); setTodayLog(t); setDayLogs(d);
+      setShowReward({ sats, habit });
+      setTimeout(() => setShowReward(null), 2500);
     }
-    setCompleting(false);
+    setToggling(null);
   };
 
   // Weigh-in state
   const [wiWeight, setWiWeight] = useState('');
   const [wiSaving, setWiSaving] = useState(false);
   const [wiResult, setWiResult] = useState<{ sats: number; milestones: string[] } | null>(null);
-
   const lastWeight = weighIns.length > 0 ? weighIns[weighIns.length - 1].weight : CONFIG.startWeight;
-  const alreadyWeighedThisWeek = weighIns.some((w) => w.weekNumber === weekNumber);
+  const alreadyWeighed = weighIns.some((w) => w.weekNumber === weekNumber);
 
   const handleWeighIn = async () => {
     if (!wiWeight || wiSaving) return;
     setWiSaving(true);
-    const weight = parseFloat(wiWeight);
-    const result = await saveWeighIn(weekNumber, weight, lastWeight);
+    const result = await saveWeighIn(weekNumber, parseFloat(wiWeight), lastWeight);
     if (result.success) {
       setWiResult({ sats: result.satsEarned, milestones: result.milestonesHit });
       const [s, w] = await Promise.all([getPlayerStats(), getWeighIns()]);
-      setStats(s);
-      setWeighIns(w);
+      setStats(s); setWeighIns(w);
     }
     setWiSaving(false);
   };
 
-  const progressPct = stats ? Math.min((stats.totalSatsEarned / stats.totalSatsAvailable) * 100, 100) : 0;
-  const weightPct = stats ? Math.min(((stats.startWeight - stats.currentWeight) / (stats.startWeight - stats.goalWeight)) * 100, 100) : 0;
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center relative z-10">
-        <div className="text-center">
-          <div className="w-10 h-10 border-2 border-[var(--border)] border-t-[var(--btc)] rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-sm text-[var(--text-muted)]">Loading bounties...</p>
-        </div>
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center relative z-10">
+      <div className="text-center">
+        <div className="w-10 h-10 border-2 border-[var(--border)] border-t-[var(--btc)] rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-sm text-[var(--text-muted)]">Loading bounties...</p>
       </div>
-    );
-  }
+    </div>
+  );
+
+  const streaks = stats?.streaks || [];
+  const totalDailyPotential = streaks.reduce((sum, s) => sum + s.satsPerCompletion, 0);
 
   return (
     <div className="min-h-screen relative z-10 pb-20">
+      {/* Sat reward popup */}
+      {showReward && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[60] sat-pop">
+          <div className="bg-[var(--btc)] text-black px-6 py-3 rounded-2xl shadow-2xl text-center">
+            <div className="text-2xl font-bold display">+{formatSats(showReward.sats)} SATS</div>
+            <div className="text-xs opacity-70">{showReward.habit} · ≈${satsToUsd(showReward.sats)}</div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--bg)]/90 backdrop-blur-md">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
@@ -109,117 +110,132 @@ export default function SatSlayer() {
           </div>
           <div className="text-right">
             <div className="mono text-sm text-[var(--btc)]">{formatSats(stats?.totalSatsEarned || 0)}</div>
-            <div className="text-[9px] text-[var(--text-muted)]">sats earned</div>
+            <div className="text-[9px] text-[var(--text-muted)]">≈${satsToUsd(stats?.totalSatsEarned || 0)}</div>
           </div>
         </div>
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-4">
-        {/* Sat reward popup */}
-        {showReward && (
-          <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 sat-pop">
-            <div className="bg-[var(--btc)] text-black px-6 py-3 rounded-2xl shadow-lg">
-              <div className="text-center">
-                <div className="text-2xl font-bold display">+{formatSats(showReward)} SATS</div>
-                <div className="text-xs opacity-70">≈ ${satsToUsd(showReward)}</div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {tab === 'today' && (
           <div className="space-y-4 animate-in">
-            {/* Progress overview */}
+            {/* Streak overview */}
             <div className="card p-4">
               <div className="flex items-center justify-between mb-3">
-                <div>
-                  <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest">Sats earned</div>
-                  <div className="mono text-2xl text-[var(--btc)]">{formatSats(stats?.totalSatsEarned || 0)}</div>
-                </div>
-                <div className="text-right">
-                  <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest">of {formatSats(CONFIG.totalSats)}</div>
-                  <div className="mono text-sm text-[var(--text-secondary)]">≈ ${satsToUsd(stats?.totalSatsEarned || 0)}</div>
-                </div>
+                <div className="text-[10px] uppercase tracking-widest text-[var(--text-muted)]">Today&apos;s potential</div>
+                <div className="mono text-sm text-[var(--btc)]">{formatSats(totalDailyPotential)} sats</div>
               </div>
-              <div className="h-2 bg-[var(--bg)] rounded-full overflow-hidden">
-                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${progressPct}%`, background: 'linear-gradient(90deg, var(--btc-dim), var(--btc))' }} />
-              </div>
-              <div className="flex justify-between mt-2 text-[10px] text-[var(--text-muted)]">
-                <span>Day {dayNumber} of 365</span>
-                <span>Week {weekNumber}</span>
+
+              {/* Three habit cards */}
+              <div className="space-y-2">
+                {HABITS.map((habit) => {
+                  const streak = streaks.find((s) => s.type === habit.type);
+                  const completed = todayLog ? todayLog[habit.type] : false;
+                  const isToggling = toggling === habit.type;
+                  const nextTier = streak ? getNextTier(streak.currentStreak) : null;
+
+                  return (
+                    <button
+                      key={habit.type}
+                      onClick={() => handleToggle(habit.type)}
+                      disabled={completed || isToggling}
+                      className={`w-full rounded-xl p-3.5 text-left transition-all active:scale-[0.98] ${completed ? 'opacity-60' : ''}`}
+                      style={{
+                        background: completed ? 'var(--bg-elevated)' : 'var(--bg)',
+                        border: completed ? '1px solid var(--border)' : `1px solid ${habit.color}30`,
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        {/* Check / Icon */}
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 ${completed ? '' : ''}`}
+                          style={{ background: completed ? `${habit.color}20` : `${habit.color}15` }}>
+                          {completed ? '✅' : habit.icon}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold">{habit.label}</span>
+                            {streak && streak.currentStreak > 0 && (
+                              <span className="text-[9px] mono px-1.5 py-0.5 rounded" style={{ background: `${habit.color}20`, color: habit.color }}>
+                                {streak.currentStreak}d · {streak.multiplier}×
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[11px] text-[var(--text-muted)]">{habit.description}</div>
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          <div className="mono text-sm" style={{ color: completed ? 'var(--green)' : 'var(--btc)' }}>
+                            {completed ? '✓' : `+${formatSats(streak?.satsPerCompletion || 500)}`}
+                          </div>
+                          {!completed && nextTier && (
+                            <div className="text-[9px] text-[var(--text-muted)]">
+                              {nextTier.nextMultiplier}× in {nextTier.daysUntil}d
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Quick stats */}
+            {/* Streak danger zone — what you'd lose */}
+            {streaks.some((s) => s.currentStreak >= 4) && (
+              <div className="card p-4" style={{ borderColor: 'var(--red)30' }}>
+                <div className="text-[10px] uppercase tracking-widest text-[var(--red)] mb-2">Don&apos;t break the chain</div>
+                <div className="space-y-1.5">
+                  {streaks.filter((s) => s.currentStreak >= 4).map((s) => {
+                    const habitInfo = HABITS.find((h) => h.type === s.type)!;
+                    const lossPerDay = s.satsPerCompletion - CONFIG.baseSatsPerHabit;
+                    return (
+                      <div key={s.type} className="flex items-center justify-between text-xs">
+                        <span className="text-[var(--text-secondary)]">{habitInfo.icon} {habitInfo.label} streak: {s.currentStreak} days</span>
+                        <span className="mono text-[var(--red)]">−{formatSats(lossPerDay)}/day if broken</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Quick stats row */}
             <div className="grid grid-cols-3 gap-2">
               <div className="card p-3 text-center">
                 <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Weight</div>
                 <div className="mono text-lg">{stats?.currentWeight || '—'}</div>
-                {stats && stats.totalLost > 0 && <div className="text-[10px] text-[var(--green)]">↓{stats.totalLost} lbs</div>}
+                {stats && stats.totalLost > 0 && <div className="text-[10px] text-[var(--green)]">↓{stats.totalLost}</div>}
               </div>
               <div className="card p-3 text-center">
-                <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Streak</div>
-                <div className="mono text-lg">{stats?.currentStreak || 0}</div>
-                <div className="text-[10px] text-[var(--text-muted)]">days</div>
+                <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Days</div>
+                <div className="mono text-lg">{stats?.totalDaysLogged || 0}</div>
+                <div className="text-[10px] text-[var(--text-muted)]">logged</div>
               </div>
               <div className="card p-3 text-center">
-                <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Done</div>
-                <div className="mono text-lg">{stats?.challengesCompleted || 0}</div>
-                <div className="text-[10px] text-[var(--text-muted)]">challenges</div>
+                <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Earned</div>
+                <div className="mono text-lg text-[var(--btc)]">${satsToUsd(stats?.totalSatsEarned || 0)}</div>
+                <div className="text-[10px] text-[var(--text-muted)]">USD</div>
               </div>
             </div>
 
-            {/* Today's challenge */}
-            <div className="card overflow-hidden" style={!todayCompleted ? { border: `1px solid ${categoryColors[todayChallenge.category]}40` } : {}}>
-              <div className="h-1" style={{ background: todayCompleted ? 'var(--green)' : categoryColors[todayChallenge.category] }} />
-              <div className="p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">{categoryIcons[todayChallenge.category]}</span>
-                    <div>
-                      <div className="text-[10px] uppercase tracking-widest" style={{ color: todayCompleted ? 'var(--green)' : categoryColors[todayChallenge.category] }}>
-                        {todayCompleted ? 'Completed' : todayChallenge.category}
-                      </div>
-                      <div className="display text-lg">{todayChallenge.title}</div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="mono text-base text-[var(--btc)]">+{formatSats(todayChallenge.sats)}</div>
-                    <div className="text-[9px] text-[var(--text-muted)]">sats</div>
-                  </div>
-                </div>
-
-                <p className="text-sm text-[var(--text-secondary)] mb-4">{todayChallenge.description}</p>
-
-                <button
-                  onClick={handleComplete}
-                  disabled={todayCompleted || completing}
-                  className={`w-full py-3.5 rounded-xl text-sm font-bold display tracking-wider transition-all active:scale-[0.98] ${
-                    todayCompleted
-                      ? 'bg-[var(--green-dim)] text-[var(--green)] cursor-default'
-                      : 'bg-[var(--btc)] text-black hover:brightness-110'
-                  } disabled:cursor-not-allowed`}
-                >
-                  {todayCompleted ? '✓ CHALLENGE COMPLETE' : completing ? 'CLAIMING...' : 'COMPLETE — CLAIM SATS'}
-                </button>
-              </div>
-            </div>
-
-            {/* Upcoming challenges preview */}
-            <div>
-              <div className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] mb-2 px-0.5">Coming up</div>
-              <div className="space-y-1.5">
-                {[1, 2, 3].map((offset) => {
-                  const future = getChallengeForDay(dayNumber + offset);
-                  const done = completedDays.has(dayNumber + offset);
+            {/* Multiplier tiers */}
+            <div className="card p-4">
+              <div className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] mb-3">Streak multiplier tiers</div>
+              <div className="space-y-1">
+                {CONFIG.streakTiers.map((tier, i) => {
+                  const nextTier = CONFIG.streakTiers[i + 1];
+                  const range = nextTier ? `${tier.minDays}-${nextTier.minDays - 1}` : `${tier.minDays}+`;
+                  const maxStreak = Math.max(...streaks.map((s) => s.currentStreak));
+                  const isActive = maxStreak >= tier.minDays && (!nextTier || maxStreak < nextTier.minDays);
                   return (
-                    <div key={offset} className={`card p-3 flex items-center gap-3 ${done ? 'opacity-40' : ''}`}>
-                      <span className="text-lg">{categoryIcons[future.category]}</span>
-                      <div className="flex-1">
-                        <div className="text-xs font-semibold">{future.title}</div>
-                        <div className="text-[10px] text-[var(--text-muted)]">Day {dayNumber + offset} · {future.category}</div>
-                      </div>
-                      <div className="mono text-xs text-[var(--btc)]">+{formatSats(future.sats)}</div>
+                    <div key={tier.minDays} className={`flex items-center justify-between py-1.5 px-2.5 rounded-lg text-xs ${isActive ? '' : ''}`}
+                      style={isActive ? { background: 'var(--btc)10', border: '1px solid var(--btc)30' } : {}}>
+                      <span className={isActive ? 'text-[var(--btc)] font-semibold' : 'text-[var(--text-secondary)]'}>
+                        {isActive && '▸ '}Days {range}
+                      </span>
+                      <span className="mono" style={{ color: isActive ? 'var(--btc)' : 'var(--text-muted)' }}>
+                        {tier.multiplier}× = {formatSats(tier.multiplier * CONFIG.baseSatsPerHabit)}/habit
+                      </span>
                     </div>
                   );
                 })}
@@ -233,243 +249,180 @@ export default function SatSlayer() {
             <div className="text-center pt-2 pb-1">
               <div className="text-3xl mb-2">⚖️</div>
               <h2 className="display text-2xl">WEEK {weekNumber} WEIGH-IN</h2>
-              <p className="text-xs text-[var(--text-muted)] mt-1">Step on the scale, log the number, earn sats</p>
             </div>
 
-            {alreadyWeighedThisWeek && !wiResult ? (
+            {alreadyWeighed && !wiResult ? (
               <div className="card p-6 text-center">
                 <div className="text-2xl mb-2">✅</div>
-                <div className="display text-lg text-[var(--green)]">ALREADY LOGGED THIS WEEK</div>
-                <p className="text-xs text-[var(--text-muted)] mt-2">Come back next week for your next weigh-in</p>
+                <div className="display text-lg text-[var(--green)]">LOGGED THIS WEEK</div>
+                <p className="text-xs text-[var(--text-muted)] mt-2">Next weigh-in: Week {weekNumber + 1}</p>
               </div>
             ) : wiResult ? (
               <div className="card p-6 text-center">
                 <div className="text-3xl mb-3">🎉</div>
                 <div className="display text-xl text-[var(--btc)] mb-1">+{formatSats(wiResult.sats)} SATS</div>
-                <div className="text-xs text-[var(--text-muted)]">≈ ${satsToUsd(wiResult.sats)}</div>
-                {wiResult.milestones.length > 0 && (
-                  <div className="mt-4 space-y-2">
-                    {wiResult.milestones.map((m) => (
-                      <div key={m} className="bg-[var(--btc)] text-black rounded-xl px-4 py-2 text-sm font-bold display">
-                        🏆 MILESTONE: {m}
-                      </div>
-                    ))}
+                <div className="text-xs text-[var(--text-muted)]">≈${satsToUsd(wiResult.sats)}</div>
+                {wiResult.milestones.length > 0 && wiResult.milestones.map((m) => (
+                  <div key={m} className="mt-3 bg-[var(--btc)] text-black rounded-xl px-4 py-2 text-sm font-bold display">
+                    🏆 {m}
                   </div>
-                )}
+                ))}
               </div>
             ) : (
               <>
                 <div className="card p-4">
                   <div className="flex justify-between mb-3">
                     <div>
-                      <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Last weight</div>
-                      <div className="mono text-xl">{lastWeight} lbs</div>
+                      <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Last</div>
+                      <div className="mono text-xl">{lastWeight}</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Lost</div>
+                      <div className="mono text-xl text-[var(--green)]">{Math.round((CONFIG.startWeight - lastWeight) * 10) / 10}</div>
                     </div>
                     <div className="text-right">
                       <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Goal</div>
-                      <div className="mono text-xl">{CONFIG.goalWeight} lbs</div>
+                      <div className="mono text-xl">{CONFIG.goalWeight}</div>
                     </div>
                   </div>
-                  <div className="h-2 bg-[var(--bg)] rounded-full overflow-hidden">
-                    <div className="h-full rounded-full transition-all" style={{ width: `${Math.max(weightPct, 0)}%`, background: 'linear-gradient(90deg, var(--green-dim), var(--green))' }} />
-                  </div>
-                  <div className="text-[10px] text-[var(--text-muted)] mt-1.5 text-center">
-                    {Math.round(Math.max(weightPct, 0))}% to goal — {Math.round(Math.max((stats?.currentWeight || CONFIG.startWeight) - CONFIG.goalWeight, 0))} lbs to go
-                  </div>
-                </div>
 
-                <div className="card p-4">
                   <label className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider block mb-2">Today&apos;s weight (lbs)</label>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    step="0.1"
-                    placeholder={String(lastWeight)}
-                    value={wiWeight}
-                    onChange={(e) => setWiWeight(e.target.value)}
-                    className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl px-4 py-3 text-xl mono text-center focus:outline-none focus:border-[var(--btc)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  />
+                  <input type="number" inputMode="decimal" step="0.1" placeholder={String(lastWeight)} value={wiWeight} onChange={(e) => setWiWeight(e.target.value)}
+                    className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl px-4 py-3 text-xl mono text-center focus:outline-none focus:border-[var(--btc)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
 
                   {wiWeight && (
                     <div className="mt-3 p-3 rounded-lg bg-[var(--bg)]">
                       <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-1">Reward preview</div>
                       {parseFloat(wiWeight) < lastWeight ? (
                         <div>
-                          <div className="mono text-lg text-[var(--btc)]">
-                            +{formatSats(Math.min(CONFIG.weeklyWeighInBase + Math.round((lastWeight - parseFloat(wiWeight)) * CONFIG.weeklyPerPoundLost), CONFIG.maxWeeklyBonus))} sats
-                          </div>
-                          <div className="text-[10px] text-[var(--green)]">
-                            ↓{Math.round((lastWeight - parseFloat(wiWeight)) * 10) / 10} lbs — nice work
-                          </div>
+                          <div className="mono text-lg text-[var(--btc)]">+{formatSats(Math.min(CONFIG.weighInBase + Math.round((lastWeight - parseFloat(wiWeight)) * CONFIG.weighInPerPound), CONFIG.weighInMaxPayout))}</div>
+                          <div className="text-[10px] text-[var(--green)]">↓{Math.round((lastWeight - parseFloat(wiWeight)) * 10) / 10} lbs</div>
                         </div>
                       ) : parseFloat(wiWeight) === lastWeight ? (
-                        <div>
-                          <div className="mono text-lg text-[var(--btc)]">+{formatSats(CONFIG.weeklyWeighInBase)} sats</div>
-                          <div className="text-[10px] text-[var(--text-muted)]">Maintained — base reward</div>
-                        </div>
+                        <div><div className="mono text-lg text-[var(--btc)]">+{formatSats(CONFIG.weighInBase)}</div><div className="text-[10px] text-[var(--text-muted)]">Maintained</div></div>
                       ) : (
-                        <div>
-                          <div className="mono text-lg text-[var(--red)]">0 sats</div>
-                          <div className="text-[10px] text-[var(--red)]">↑{Math.round((parseFloat(wiWeight) - lastWeight) * 10) / 10} lbs — no reward this week</div>
-                        </div>
+                        <div><div className="mono text-lg text-[var(--red)]">0 sats</div><div className="text-[10px] text-[var(--red)]">↑{Math.round((parseFloat(wiWeight) - lastWeight) * 10) / 10} lbs — no reward</div></div>
                       )}
                     </div>
                   )}
 
-                  <button
-                    onClick={handleWeighIn}
-                    disabled={!wiWeight || wiSaving}
-                    className="w-full mt-3 py-3.5 rounded-xl text-sm font-bold display tracking-wider bg-[var(--btc)] text-black disabled:opacity-30 active:scale-[0.98] transition-all"
-                  >
+                  <button onClick={handleWeighIn} disabled={!wiWeight || wiSaving}
+                    className="w-full mt-3 py-3.5 rounded-xl text-sm font-bold display tracking-wider bg-[var(--btc)] text-black disabled:opacity-30 active:scale-[0.98] transition-all">
                     {wiSaving ? 'SAVING...' : 'LOG WEIGH-IN'}
                   </button>
                 </div>
 
                 <div className="card p-4">
-                  <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-2">How it pays</div>
+                  <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-2">Payout structure</div>
                   <div className="space-y-1.5 text-xs text-[var(--text-secondary)]">
-                    <div className="flex justify-between"><span>Show up &amp; log weight</span><span className="mono text-[var(--btc)]">+{formatSats(CONFIG.weeklyWeighInBase)}</span></div>
-                    <div className="flex justify-between"><span>Per pound lost</span><span className="mono text-[var(--btc)]">+{formatSats(CONFIG.weeklyPerPoundLost)}</span></div>
-                    <div className="flex justify-between"><span>Max weekly payout</span><span className="mono">{formatSats(CONFIG.maxWeeklyBonus)}</span></div>
-                    <div className="flex justify-between"><span>Weight gain</span><span className="mono text-[var(--red)]">0 sats</span></div>
+                    <div className="flex justify-between"><span>Log weight</span><span className="mono text-[var(--btc)]">+{formatSats(CONFIG.weighInBase)}</span></div>
+                    <div className="flex justify-between"><span>Per pound lost</span><span className="mono text-[var(--btc)]">+{formatSats(CONFIG.weighInPerPound)}</span></div>
+                    <div className="flex justify-between"><span>Max weekly</span><span className="mono">{formatSats(CONFIG.weighInMaxPayout)}</span></div>
+                    <div className="flex justify-between"><span>Gained weight</span><span className="mono text-[var(--red)]">0 sats</span></div>
                   </div>
                 </div>
+
+                {/* Weigh-in history */}
+                {weighIns.length > 0 && (
+                  <div>
+                    <div className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] mb-2 px-0.5">History</div>
+                    <div className="space-y-1.5">
+                      {[...weighIns].reverse().map((wi) => (
+                        <div key={wi.weekNumber} className="card p-3 flex items-center justify-between">
+                          <div>
+                            <div className="text-xs font-semibold">Week {wi.weekNumber}</div>
+                            <div className="text-[10px] text-[var(--text-muted)]">{wi.date}</div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              <div className="mono text-sm">{wi.weight}</div>
+                              <div className="text-[10px]" style={{ color: wi.change <= 0 ? 'var(--green)' : 'var(--red)' }}>
+                                {wi.change <= 0 ? '↓' : '↑'}{Math.abs(wi.change)}
+                              </div>
+                            </div>
+                            <div className="mono text-sm text-[var(--btc)]">+{formatSats(wi.satsEarned)}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </div>
         )}
 
-        {tab === 'history' && (
+        {tab === 'stats' && stats && (
           <div className="space-y-4 animate-in">
-            <h2 className="display text-xl pt-2">WEIGH-IN HISTORY</h2>
-            {weighIns.length === 0 ? (
-              <div className="card p-8 text-center">
-                <div className="text-2xl mb-2">⚖️</div>
-                <p className="text-sm text-[var(--text-muted)]">No weigh-ins yet. Log your first one!</p>
-              </div>
-            ) : (
-              <div className="space-y-1.5">
-                {[...weighIns].reverse().map((wi) => (
-                  <div key={wi.weekNumber} className="card p-3.5">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-xs font-semibold">Week {wi.weekNumber}</div>
-                        <div className="text-[10px] text-[var(--text-muted)]">{wi.date}</div>
-                      </div>
-                      <div className="text-right flex items-center gap-3">
-                        <div>
-                          <div className="mono text-sm">{wi.weight} lbs</div>
-                          <div className="text-[10px]" style={{ color: wi.change <= 0 ? 'var(--green)' : 'var(--red)' }}>
-                            {wi.change <= 0 ? '↓' : '↑'}{Math.abs(wi.change)} lbs
-                          </div>
-                        </div>
-                        <div className="mono text-sm text-[var(--btc)]">+{formatSats(wi.satsEarned)}</div>
-                      </div>
-                    </div>
-                    {wi.milestonesHit && wi.milestonesHit.length > 0 && (
-                      <div className="mt-2 flex gap-1.5">
-                        {wi.milestonesHit.map((m) => (
-                          <span key={m} className="text-[9px] bg-[var(--btc)] text-black px-2 py-0.5 rounded font-bold">🏆 {m}</span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
+            {/* Total earned */}
+            <div className="card p-5 text-center">
+              <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-1">Total earned</div>
+              <div className="mono text-4xl text-[var(--btc)]">{formatSats(stats.totalSatsEarned)}</div>
+              <div className="text-sm text-[var(--text-muted)] mt-1">≈${satsToUsd(stats.totalSatsEarned)}</div>
+            </div>
 
-            {/* Milestones */}
-            <div>
-              <div className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] mb-2 px-0.5">Milestones</div>
-              <div className="space-y-1.5">
-                {CONFIG.milestones.map((m) => {
-                  const hit = stats?.milestonesHit.includes(m.label);
+            {/* Weight */}
+            <div className="card p-5">
+              <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-3 text-center">Weight journey</div>
+              <div className="flex items-baseline justify-center gap-4">
+                <div className="text-center"><div className="text-[10px] text-[var(--text-muted)]">Start</div><div className="mono text-lg">{CONFIG.startWeight}</div></div>
+                <div className="text-xl text-[var(--text-muted)]">→</div>
+                <div className="text-center"><div className="text-[10px] text-[var(--green)]">Now</div><div className="mono text-2xl text-[var(--green)]">{stats.currentWeight}</div></div>
+                <div className="text-xl text-[var(--text-muted)]">→</div>
+                <div className="text-center"><div className="text-[10px] text-[var(--text-muted)]">Goal</div><div className="mono text-lg">{CONFIG.goalWeight}</div></div>
+              </div>
+              <div className="mono text-xs text-center text-[var(--text-muted)] mt-2">{stats.totalLost} lbs lost</div>
+            </div>
+
+            {/* Streaks detail */}
+            <div className="card p-4">
+              <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-3">Streak details</div>
+              <div className="space-y-3">
+                {streaks.map((s) => {
+                  const habit = HABITS.find((h) => h.type === s.type)!;
                   return (
-                    <div key={m.label} className={`card p-3 flex items-center justify-between ${hit ? 'opacity-50' : ''}`}>
-                      <div className="flex items-center gap-2.5">
-                        <span className="text-lg">{hit ? '✅' : '🎯'}</span>
-                        <div>
-                          <div className="text-xs font-semibold">{m.label}</div>
-                          <div className="text-[10px] text-[var(--text-muted)]">Reach {m.weight} lbs</div>
+                    <div key={s.type} className="flex items-center gap-3">
+                      <span className="text-xl">{habit.icon}</span>
+                      <div className="flex-1">
+                        <div className="text-xs font-semibold">{habit.label}</div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="mono text-[10px] px-1.5 py-0.5 rounded" style={{ background: `${habit.color}15`, color: habit.color }}>
+                            {s.currentStreak}d streak
+                          </span>
+                          <span className="mono text-[10px] text-[var(--btc)]">{s.multiplier}×</span>
+                          <span className="text-[10px] text-[var(--text-muted)]">Best: {s.longestStreak}d</span>
                         </div>
                       </div>
-                      <div className="mono text-sm" style={{ color: hit ? 'var(--green)' : 'var(--btc)' }}>
-                        {hit ? 'CLAIMED' : `+${formatSats(m.sats)}`}
-                      </div>
+                      <div className="mono text-sm text-[var(--btc)]">{formatSats(s.satsPerCompletion)}</div>
                     </div>
                   );
                 })}
               </div>
             </div>
-          </div>
-        )}
 
-        {tab === 'stats' && stats && (
-          <div className="space-y-4 animate-in">
-            <h2 className="display text-xl pt-2">{CONFIG.playerName.toUpperCase()}&apos;S STATS</h2>
-
-            {/* Big numbers */}
-            <div className="card p-5 text-center">
-              <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-1">Total sats earned</div>
-              <div className="mono text-4xl text-[var(--btc)]">{formatSats(stats.totalSatsEarned)}</div>
-              <div className="text-sm text-[var(--text-muted)] mt-1">≈ ${satsToUsd(stats.totalSatsEarned)} at current rates</div>
-              <div className="h-2 bg-[var(--bg)] rounded-full overflow-hidden mt-3">
-                <div className="h-full rounded-full" style={{ width: `${progressPct}%`, background: 'linear-gradient(90deg, var(--btc-dim), var(--btc))' }} />
+            {/* Milestones */}
+            <div className="card p-4">
+              <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-3">Milestones</div>
+              <div className="space-y-1.5">
+                {CONFIG.milestones.map((m) => {
+                  const hit = stats.milestonesHit.includes(m.label);
+                  return (
+                    <div key={m.label} className={`flex items-center justify-between py-2 px-3 rounded-lg ${hit ? 'opacity-40' : ''}`} style={{ background: 'var(--bg)' }}>
+                      <div className="flex items-center gap-2">
+                        <span>{hit ? '✅' : '🎯'}</span>
+                        <div><div className="text-xs font-semibold">{m.label}</div><div className="text-[10px] text-[var(--text-muted)]">{m.weight} lbs</div></div>
+                      </div>
+                      <div className="mono text-sm" style={{ color: hit ? 'var(--green)' : 'var(--btc)' }}>{hit ? 'CLAIMED' : `+${formatSats(m.sats)}`}</div>
+                    </div>
+                  );
+                })}
               </div>
-              <div className="text-[10px] text-[var(--text-muted)] mt-1">{Math.round(progressPct)}% of {formatSats(CONFIG.totalSats)} total bounty</div>
-            </div>
-
-            {/* Weight progress */}
-            <div className="card p-5 text-center">
-              <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-1">Weight</div>
-              <div className="flex items-baseline justify-center gap-3">
-                <div>
-                  <div className="text-[10px] text-[var(--text-muted)]">Start</div>
-                  <div className="mono text-lg">{stats.startWeight}</div>
-                </div>
-                <div className="text-2xl text-[var(--text-muted)]">→</div>
-                <div>
-                  <div className="text-[10px] text-[var(--green)]">Current</div>
-                  <div className="mono text-2xl text-[var(--green)]">{stats.currentWeight}</div>
-                </div>
-                <div className="text-2xl text-[var(--text-muted)]">→</div>
-                <div>
-                  <div className="text-[10px] text-[var(--text-muted)]">Goal</div>
-                  <div className="mono text-lg">{stats.goalWeight}</div>
-                </div>
-              </div>
-              <div className="h-2 bg-[var(--bg)] rounded-full overflow-hidden mt-3">
-                <div className="h-full rounded-full" style={{ width: `${Math.max(weightPct, 0)}%`, background: 'linear-gradient(90deg, var(--green-dim), var(--green))' }} />
-              </div>
-              <div className="mono text-xs text-[var(--text-muted)] mt-1.5">{stats.totalLost} lbs lost · {Math.round(Math.max(weightPct, 0))}% to goal</div>
             </div>
 
             {/* Grid stats */}
             <div className="grid grid-cols-2 gap-2">
-              <div className="card p-3.5 text-center">
-                <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Current streak</div>
-                <div className="mono text-xl mt-1">{stats.currentStreak} <span className="text-sm text-[var(--text-muted)]">days</span></div>
-              </div>
-              <div className="card p-3.5 text-center">
-                <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Best streak</div>
-                <div className="mono text-xl mt-1">{stats.longestStreak} <span className="text-sm text-[var(--text-muted)]">days</span></div>
-              </div>
-              <div className="card p-3.5 text-center">
-                <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Challenges done</div>
-                <div className="mono text-xl mt-1">{stats.challengesCompleted}<span className="text-sm text-[var(--text-muted)]">/365</span></div>
-              </div>
-              <div className="card p-3.5 text-center">
-                <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Weigh-ins</div>
-                <div className="mono text-xl mt-1">{stats.weighInsLogged}<span className="text-sm text-[var(--text-muted)]">/52</span></div>
-              </div>
-              <div className="card p-3.5 text-center">
-                <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Milestones</div>
-                <div className="mono text-xl mt-1">{stats.milestonesHit.length}<span className="text-sm text-[var(--text-muted)]">/4</span></div>
-              </div>
-              <div className="card p-3.5 text-center">
-                <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Comeback pool</div>
-                <div className="mono text-xl mt-1 text-[var(--btc)]">{formatSats(stats.comebackPool)}</div>
-              </div>
+              <div className="card p-3.5 text-center"><div className="text-[10px] text-[var(--text-muted)] uppercase">Days logged</div><div className="mono text-xl mt-1">{stats.totalDaysLogged}</div></div>
+              <div className="card p-3.5 text-center"><div className="text-[10px] text-[var(--text-muted)] uppercase">Weigh-ins</div><div className="mono text-xl mt-1">{stats.weighInsLogged}<span className="text-sm text-[var(--text-muted)]">/52</span></div></div>
             </div>
           </div>
         )}
@@ -481,14 +434,10 @@ export default function SatSlayer() {
           {([
             { id: 'today' as const, label: 'Today', icon: '⚡' },
             { id: 'weigh-in' as const, label: 'Weigh-in', icon: '⚖️' },
-            { id: 'history' as const, label: 'History', icon: '📊' },
             { id: 'stats' as const, label: 'Stats', icon: '🏆' },
           ]).map((t) => (
-            <button
-              key={t.id}
-              onClick={() => { setTab(t.id); setWiResult(null); }}
-              className={`flex flex-col items-center py-1.5 px-4 rounded-lg transition-all ${tab === t.id ? 'text-[var(--btc)]' : 'text-[var(--text-muted)]'}`}
-            >
+            <button key={t.id} onClick={() => { setTab(t.id); setWiResult(null); }}
+              className={`flex flex-col items-center py-1.5 px-5 rounded-lg transition-all ${tab === t.id ? 'text-[var(--btc)]' : 'text-[var(--text-muted)]'}`}>
               <span className="text-lg">{t.icon}</span>
               <span className="text-[9px] mt-0.5 font-medium">{t.label}</span>
             </button>
