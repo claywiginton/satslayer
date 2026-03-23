@@ -5,9 +5,11 @@ import { CONFIG, formatSats } from '@/lib/data';
 
 interface Props {
   onComplete: (username: string, startWeight: number) => void;
+  claimed?: boolean; // true if someone already onboarded
+  onReset?: () => void;
 }
 
-export default function Onboarding({ onComplete }: Props) {
+export default function Onboarding({ onComplete, claimed = false, onReset }: Props) {
   const [step, setStep] = useState(0);
   const [username, setUsername] = useState('');
   const [startWeight, setStartWeight] = useState('');
@@ -15,6 +17,32 @@ export default function Onboarding({ onComplete }: Props) {
   const [verifying, setVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState('');
   const [verified, setVerified] = useState(false);
+  const [showAdminReset, setShowAdminReset] = useState(false);
+  const [adminPin, setAdminPin] = useState('');
+  const [resetting, setResetting] = useState(false);
+  const [resetError, setResetError] = useState('');
+
+  const handleReset = async () => {
+    if (!adminPin) return;
+    setResetting(true);
+    setResetError('');
+    try {
+      const res = await fetch('/api/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: adminPin }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (onReset) onReset();
+      } else {
+        setResetError(data.error || 'Reset failed');
+      }
+    } catch {
+      setResetError('Connection error');
+    }
+    setResetting(false);
+  };
 
   const handleVerify = async () => {
     if (!username.trim()) return;
@@ -69,13 +97,53 @@ export default function Onboarding({ onComplete }: Props) {
             <div className="text-sm text-[var(--text-muted)] mt-1">sats · waiting for you</div>
           </div>
 
-          <button
-            onClick={() => setStep(1)}
-            className="w-full py-4 rounded-2xl text-lg font-bold display tracking-wider bg-[var(--btc)] text-black active:scale-[0.98] transition-all"
-          >
-            ACCEPT THE BOUNTY
-          </button>
-          <p className="text-[10px] text-[var(--text-muted)] mt-3">52 weeks · 3 daily habits · unlimited potential</p>
+          {claimed ? (
+            <>
+              <div className="card p-5 mb-4 text-center" style={{ borderColor: 'var(--red)40' }}>
+                <div className="text-lg mb-1">🔒</div>
+                <div className="text-sm font-semibold text-[var(--text-secondary)]">This bounty has been claimed</div>
+                <p className="text-xs text-[var(--text-muted)] mt-1">Someone has already accepted this challenge.</p>
+              </div>
+
+              {/* Hidden admin reset — tap the lock icon 5 times or show PIN input */}
+              {!showAdminReset ? (
+                <button onClick={() => setShowAdminReset(true)} className="text-[10px] text-[var(--text-muted)] mt-4 opacity-30">
+                  Admin
+                </button>
+              ) : (
+                <div className="card p-4 mt-4">
+                  <div className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] mb-2">Admin reset</div>
+                  <div className="flex gap-2">
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      placeholder="PIN"
+                      value={adminPin}
+                      onChange={(e) => setAdminPin(e.target.value)}
+                      className="flex-1 bg-[var(--bg)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm mono text-center focus:outline-none focus:border-[var(--btc)]"
+                      maxLength={8}
+                    />
+                    <button onClick={handleReset} disabled={resetting || !adminPin}
+                      className="px-4 py-2 rounded-lg text-sm font-semibold bg-[var(--red)] text-white disabled:opacity-30 active:scale-95 transition-all">
+                      {resetting ? '...' : 'Wipe'}
+                    </button>
+                  </div>
+                  {resetError && <p className="text-xs text-[var(--red)] mt-1.5">{resetError}</p>}
+                  <p className="text-[10px] text-[var(--text-muted)] mt-1.5">This permanently deletes all data</p>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => setStep(1)}
+                className="w-full py-4 rounded-2xl text-lg font-bold display tracking-wider bg-[var(--btc)] text-black active:scale-[0.98] transition-all"
+              >
+                ACCEPT THE BOUNTY
+              </button>
+              <p className="text-[10px] text-[var(--text-muted)] mt-3">52 weeks · 3 daily habits · unlimited potential</p>
+            </>
+          )}
         </div>
       </div>
     );

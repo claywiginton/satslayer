@@ -16,6 +16,7 @@ import Onboarding from '@/components/Onboarding';
 export default function SatSlayer() {
   const [profile, setProfile] = useState<PlayerProfile | null>(null);
   const [profileChecked, setProfileChecked] = useState(false);
+  const [profileExists, setProfileExists] = useState(false); // someone already onboarded
   const [tab, setTab] = useState<'today' | 'weigh-in' | 'stats'>('today');
   const [stats, setStats] = useState<PlayerStats | null>(null);
   const [todayLog, setTodayLog] = useState<DayLog | null>(null);
@@ -29,6 +30,7 @@ export default function SatSlayer() {
   useEffect(() => {
     getPlayerProfile().then((p) => {
       setProfile(p);
+      setProfileExists(!!p);
       setProfileChecked(true);
     }).catch(() => setProfileChecked(true));
   }, []);
@@ -64,9 +66,16 @@ export default function SatSlayer() {
     );
   }
 
-  // Show onboarding if no profile
+  // Show onboarding if no profile (or show claimed state for strangers)
   if (!profile) {
-    return <Onboarding onComplete={handleOnboardingComplete} />;
+    return <Onboarding
+      onComplete={handleOnboardingComplete}
+      claimed={profileExists}
+      onReset={() => {
+        setProfile(null);
+        setProfileExists(false);
+      }}
+    />;
   }
 
   // Show loading while fetching data
