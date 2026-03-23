@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import {
   CONFIG, HABITS, formatSats, satsToUsd, getMultiplier, getSatsForHabit, getNextTier,
   getDayNumber, getWeekNumber, getTodayStr, calculateWeighInReward,
-  type HabitType, type HabitStreak, type PlayerStats, type WeighIn, type DayLog, habitMet,
+  type HabitType, type HabitStreak, type PlayerStats, type WeighIn, type DayLog, type WeightUnit,
+  habitMet, kgToLbs, lbsToKg, formatWeight,
 } from '@/lib/data';
 import {
   getDayLogs, getTodayLog, saveHabitValue, logSats, calculateStreaks,
@@ -29,6 +30,14 @@ export default function SatSlayer() {
   const [wiSaving, setWiSaving] = useState(false);
   const [wiResult, setWiResult] = useState<{ sats: number; milestones: string[] } | null>(null);
   const [habitInputs, setHabitInputs] = useState<Record<HabitType, string>>({ steps: '', workout: '', calories: '' });
+  const [weightUnit, setWeightUnit] = useState<WeightUnit>(CONFIG.defaultUnit);
+
+  // Display weight in user's chosen unit (DB stores kg)
+  const dw = (kg: number) => {
+    const val = weightUnit === 'lbs' ? kgToLbs(kg) : kg;
+    return `${Math.round(val * 10) / 10}`;
+  };
+  const wu = weightUnit; // shorthand for unit label
 
   // Check if player has completed onboarding
   useEffect(() => {
@@ -145,7 +154,10 @@ export default function SatSlayer() {
   const handleWeighIn = async () => {
     if (!wiWeight || wiSaving) return;
     setWiSaving(true);
-    const result = await saveWeighIn(weekNumber, parseFloat(wiWeight), lastWeight);
+    // Convert input to kg if user is entering in lbs
+    const inputVal = parseFloat(wiWeight);
+    const weightInKg = weightUnit === 'lbs' ? lbsToKg(inputVal) : inputVal;
+    const result = await saveWeighIn(weekNumber, weightInKg, lastWeight);
     if (result.success) {
       setWiResult({ sats: result.satsEarned, milestones: result.milestonesHit });
 
@@ -189,9 +201,14 @@ export default function SatSlayer() {
               <div className="text-[9px] text-[var(--text-muted)] tracking-widest uppercase -mt-0.5">{profile.strikeUsername}&apos;s Bounty</div>
             </div>
           </div>
-          <div className="text-right">
+          <div className="flex items-center gap-2.5">
             <div className="mono text-sm text-[var(--btc)]">{formatSats(stats?.totalSatsEarned || 0)}</div>
-            <div className="text-[9px] text-[var(--text-muted)]">≈${satsToUsd(stats?.totalSatsEarned || 0)}</div>
+            <button
+              onClick={() => setWeightUnit(weightUnit === 'kg' ? 'lbs' : 'kg')}
+              className="text-[9px] mono px-2 py-1 rounded-md border border-[var(--border)] text-[var(--text-muted)] active:scale-95 transition-all"
+            >
+              {weightUnit.toUpperCase()}
+            </button>
           </div>
         </div>
       </header>
@@ -341,7 +358,7 @@ export default function SatSlayer() {
               <div className="card p-3 text-center">
                 <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Weight</div>
                 <div className="mono text-lg">{stats?.currentWeight || profile.startWeight}</div>
-                {stats && stats.totalLost > 0 && <div className="text-[10px] text-[var(--green)]">↓{stats.totalLost}</div>}
+                {stats && stats.totalLost > 0 && <div className="text-[10px] text-[var(--green)]">↓{dw(stats.totalLost)}</div>}
               </div>
               <div className="card p-3 text-center">
                 <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Days</div>
@@ -409,37 +426,42 @@ export default function SatSlayer() {
                   <div className="flex justify-between mb-3">
                     <div>
                       <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Last</div>
-                      <div className="mono text-xl">{lastWeight}</div>
+                      <div className="mono text-xl">{dw(lastWeight)}</div>
                     </div>
                     <div className="text-center">
                       <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Lost</div>
-                      <div className="mono text-xl text-[var(--green)]">{Math.round((profile.startWeight - lastWeight) * 10) / 10}</div>
+                      <div className="mono text-xl text-[var(--green)]">{dw(Math.max(profile.startWeight - lastWeight, 0))}</div>
                     </div>
                     <div className="text-right">
                       <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Goal</div>
-                      <div className="mono text-xl">{profile.goalWeight}</div>
+                      <div className="mono text-xl">{dw(profile.goalWeight)}</div>
                     </div>
                   </div>
 
-                  <label className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider block mb-2">Today&apos;s weight (lbs)</label>
-                  <input type="number" inputMode="decimal" step="0.1" placeholder={String(lastWeight)} value={wiWeight} onChange={(e) => setWiWeight(e.target.value)}
+                  <label className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider block mb-2">Today&apos;s weight ({wu})</label>
+                  <input type="number" inputMode="decimal" step="0.1" placeholder={dw(lastWeight)} value={wiWeight} onChange={(e) => setWiWeight(e.target.value)}
                     className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl px-4 py-3 text-xl mono text-center focus:outline-none focus:border-[var(--btc)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
 
-                  {wiWeight && (
+                  {wiWeight && (() => {
+                    const inputVal = parseFloat(wiWeight);
+                    const inputKg = weightUnit === 'lbs' ? lbsToKg(inputVal) : inputVal;
+                    const diff = Math.round(Math.abs(lastWeight - inputKg) * 10) / 10;
+                    return (
                     <div className="mt-3 p-3 rounded-lg bg-[var(--bg)]">
                       <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-1">Reward preview</div>
-                      {parseFloat(wiWeight) < lastWeight ? (
+                      {inputKg < lastWeight ? (
                         <div>
-                          <div className="mono text-lg text-[var(--btc)]">+{formatSats(Math.min(CONFIG.weighInBase + Math.round((lastWeight - parseFloat(wiWeight)) * CONFIG.weighInPerPound), CONFIG.weighInMaxPayout))}</div>
-                          <div className="text-[10px] text-[var(--green)]">↓{Math.round((lastWeight - parseFloat(wiWeight)) * 10) / 10} lbs</div>
+                          <div className="mono text-lg text-[var(--btc)]">+{formatSats(Math.min(CONFIG.weighInBase + Math.round(diff * CONFIG.weighInPerUnit), CONFIG.weighInMaxPayout))}</div>
+                          <div className="text-[10px] text-[var(--green)]">↓{dw(diff)} {wu}</div>
                         </div>
-                      ) : parseFloat(wiWeight) === lastWeight ? (
+                      ) : inputKg === lastWeight ? (
                         <div><div className="mono text-lg text-[var(--btc)]">+{formatSats(CONFIG.weighInBase)}</div><div className="text-[10px] text-[var(--text-muted)]">Maintained</div></div>
                       ) : (
-                        <div><div className="mono text-lg text-[var(--red)]">0 sats</div><div className="text-[10px] text-[var(--red)]">↑{Math.round((parseFloat(wiWeight) - lastWeight) * 10) / 10} lbs — no reward</div></div>
+                        <div><div className="mono text-lg text-[var(--red)]">0 sats</div><div className="text-[10px] text-[var(--red)]">↑{dw(diff)} {wu} — no reward</div></div>
                       )}
                     </div>
-                  )}
+                    );
+                  })()}
 
                   <button onClick={handleWeighIn} disabled={!wiWeight || wiSaving}
                     className="w-full mt-3 py-3.5 rounded-xl text-sm font-bold display tracking-wider bg-[var(--btc)] text-black disabled:opacity-30 active:scale-[0.98] transition-all">
@@ -451,7 +473,7 @@ export default function SatSlayer() {
                   <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider mb-2">Payout structure</div>
                   <div className="space-y-1.5 text-xs text-[var(--text-secondary)]">
                     <div className="flex justify-between"><span>Log weight</span><span className="mono text-[var(--btc)]">+{formatSats(CONFIG.weighInBase)}</span></div>
-                    <div className="flex justify-between"><span>Per pound lost</span><span className="mono text-[var(--btc)]">+{formatSats(CONFIG.weighInPerPound)}</span></div>
+                    <div className="flex justify-between"><span>Per {wu} lost</span><span className="mono text-[var(--btc)]">+{formatSats(CONFIG.weighInPerUnit)}</span></div>
                     <div className="flex justify-between"><span>Gained weight</span><span className="mono text-[var(--red)]">0 sats</span></div>
                   </div>
                 </div>
@@ -464,7 +486,7 @@ export default function SatSlayer() {
                         <div key={wi.weekNumber} className="card p-3 flex items-center justify-between">
                           <div><div className="text-xs font-semibold">Week {wi.weekNumber}</div><div className="text-[10px] text-[var(--text-muted)]">{wi.date}</div></div>
                           <div className="flex items-center gap-3">
-                            <div className="text-right"><div className="mono text-sm">{wi.weight}</div><div className="text-[10px]" style={{ color: wi.change <= 0 ? 'var(--green)' : 'var(--red)' }}>{wi.change <= 0 ? '↓' : '↑'}{Math.abs(wi.change)}</div></div>
+                            <div className="text-right"><div className="mono text-sm">{dw(wi.weight)}</div><div className="text-[10px]" style={{ color: wi.change <= 0 ? 'var(--green)' : 'var(--red)' }}>{wi.change <= 0 ? '↓' : '↑'}{dw(Math.abs(wi.change))}</div></div>
                             <div className="mono text-sm text-[var(--btc)]">+{formatSats(wi.satsEarned)}</div>
                           </div>
                         </div>
@@ -488,16 +510,16 @@ export default function SatSlayer() {
             <div className="card p-5">
               <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-3 text-center">Weight journey</div>
               <div className="flex items-baseline justify-center gap-4">
-                <div className="text-center"><div className="text-[10px] text-[var(--text-muted)]">Start</div><div className="mono text-lg">{profile.startWeight}</div></div>
+                <div className="text-center"><div className="text-[10px] text-[var(--text-muted)]">Start</div><div className="mono text-lg">{dw(profile.startWeight)}</div></div>
                 <div className="text-xl text-[var(--text-muted)]">→</div>
-                <div className="text-center"><div className="text-[10px] text-[var(--green)]">Now</div><div className="mono text-2xl text-[var(--green)]">{stats.currentWeight}</div></div>
+                <div className="text-center"><div className="text-[10px] text-[var(--green)]">Now</div><div className="mono text-2xl text-[var(--green)]">{dw(stats.currentWeight)}</div></div>
                 <div className="text-xl text-[var(--text-muted)]">→</div>
-                <div className="text-center"><div className="text-[10px] text-[var(--text-muted)]">Goal</div><div className="mono text-lg">{profile.goalWeight}</div></div>
+                <div className="text-center"><div className="text-[10px] text-[var(--text-muted)]">Goal</div><div className="mono text-lg">{dw(profile.goalWeight)}</div></div>
               </div>
               <div className="h-2 bg-[var(--bg)] rounded-full overflow-hidden mt-3">
                 <div className="h-full rounded-full" style={{ width: `${Math.max(weightPct, 0)}%`, background: 'linear-gradient(90deg, var(--green-dim), var(--green))' }} />
               </div>
-              <div className="mono text-xs text-center text-[var(--text-muted)] mt-1.5">{stats.totalLost} lbs lost</div>
+              <div className="mono text-xs text-center text-[var(--text-muted)] mt-1.5">{dw(stats.totalLost)} {wu} lost</div>
             </div>
 
             <div className="card p-4">
@@ -530,7 +552,7 @@ export default function SatSlayer() {
                   const hit = stats.milestonesHit.includes(m.label);
                   return (
                     <div key={m.label} className={`flex items-center justify-between py-2 px-3 rounded-lg ${hit ? 'opacity-40' : ''}`} style={{ background: 'var(--bg)' }}>
-                      <div className="flex items-center gap-2"><span>{hit ? '✅' : '🎯'}</span><div><div className="text-xs font-semibold">{m.label}</div><div className="text-[10px] text-[var(--text-muted)]">{m.weight} lbs</div></div></div>
+                      <div className="flex items-center gap-2"><span>{hit ? '✅' : '🎯'}</span><div><div className="text-xs font-semibold">{m.label}</div><div className="text-[10px] text-[var(--text-muted)]">{dw(m.weight)} {wu}</div></div></div>
                       <div className="mono text-sm" style={{ color: hit ? 'var(--green)' : 'var(--btc)' }}>{hit ? 'CLAIMED' : `+${formatSats(m.sats)}`}</div>
                     </div>
                   );

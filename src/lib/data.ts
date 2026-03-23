@@ -1,9 +1,12 @@
 // ── SATSLAYER v2: STREAK MULTIPLIER ENGINE ──
 
+export type WeightUnit = 'kg' | 'lbs';
+
 export const CONFIG = {
   playerName: 'Eddy',
-  startWeight: 300,
-  goalWeight: 250,
+  startWeight: 129,       // kg
+  goalWeight: 95,          // kg
+  defaultUnit: 'kg' as WeightUnit,
   calorieTarget: 2000,
   startDate: '2026-04-01',
   totalSats: 2_000_000,
@@ -22,19 +25,27 @@ export const CONFIG = {
     { minDays: 61, multiplier: 20 },  // Days 61+ — max
   ],
 
-  // Weekly weigh-in
+  // Weekly weigh-in (per kg lost now, since we're in kg)
   weighInBase: 5_000,
-  weighInPerPound: 10_000,
+  weighInPerUnit: 10_000,   // per kg lost (was per lb)
   weighInMaxPayout: 75_000,
 
-  // Milestone jackpots
+  // Milestone jackpots (in kg)
   milestones: [
-    { weight: 290, label: 'Down 10', sats: 25_000 },
-    { weight: 275, label: 'Halfway', sats: 50_000 },
-    { weight: 260, label: 'Almost There', sats: 75_000 },
-    { weight: 250, label: 'GOAL WEIGHT', sats: 150_000 },
+    { weight: 122, label: 'Down 7kg', sats: 25_000 },
+    { weight: 112, label: 'Halfway', sats: 50_000 },
+    { weight: 103, label: 'Under 103', sats: 75_000 },
+    { weight: 95, label: 'GOAL WEIGHT', sats: 150_000 },
   ] as Milestone[],
 };
+
+// Unit conversion helpers
+export function kgToLbs(kg: number): number { return Math.round(kg * 2.20462 * 10) / 10; }
+export function lbsToKg(lbs: number): number { return Math.round(lbs / 2.20462 * 10) / 10; }
+export function formatWeight(value: number, unit: WeightUnit): string {
+  if (unit === 'lbs') return `${kgToLbs(value)} lbs`;
+  return `${value} kg`;
+}
 
 export type HabitType = 'steps' | 'workout' | 'calories';
 
@@ -145,13 +156,13 @@ export function calculateWeighInReward(currentWeight: number, previousWeight: nu
   baseSats: number;
   bonusSats: number;
   totalSats: number;
-  poundsLost: number;
+  unitsLost: number;
 } {
-  const poundsLost = Math.max(0, previousWeight - currentWeight);
+  const unitsLost = Math.max(0, Math.round((previousWeight - currentWeight) * 10) / 10);
   const baseSats = currentWeight <= previousWeight ? CONFIG.weighInBase : 0;
-  const bonusSats = Math.round(poundsLost * CONFIG.weighInPerPound);
+  const bonusSats = Math.round(unitsLost * CONFIG.weighInPerUnit);
   const totalSats = Math.min(baseSats + bonusSats, CONFIG.weighInMaxPayout);
-  return { baseSats, bonusSats, totalSats, poundsLost };
+  return { baseSats, bonusSats, totalSats, unitsLost };
 }
 
 export function checkMilestones(weight: number, alreadyHit: string[]): Milestone[] {

@@ -194,11 +194,11 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
             </div>
 
             <div>
-              <label className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] block mb-2">Current weight (lbs)</label>
+              <label className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] block mb-2">Current weight (kg)</label>
               <input
                 type="number"
                 inputMode="decimal"
-                placeholder="300"
+                placeholder="129"
                 value={startWeight}
                 onChange={(e) => setStartWeight(e.target.value)}
                 className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-xl px-4 py-3 text-base mono focus:outline-none focus:border-[var(--btc)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -206,11 +206,11 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
             </div>
 
             <div>
-              <label className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] block mb-2">Goal weight (lbs)</label>
+              <label className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] block mb-2">Goal weight (kg)</label>
               <input
                 type="number"
                 inputMode="decimal"
-                placeholder="250"
+                placeholder="95"
                 value={goalWeight}
                 onChange={(e) => setGoalWeight(e.target.value)}
                 className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-xl px-4 py-3 text-base mono focus:outline-none focus:border-[var(--btc)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -347,8 +347,8 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
                 <span className="mono text-[var(--btc)]">+{formatSats(CONFIG.weighInBase)}</span>
               </div>
               <div className="flex justify-between text-[var(--text-secondary)]">
-                <span>Per pound lost</span>
-                <span className="mono text-[var(--btc)]">+{formatSats(CONFIG.weighInPerPound)}</span>
+                <span>Per kg lost</span>
+                <span className="mono text-[var(--btc)]">+{formatSats(CONFIG.weighInPerUnit)}</span>
               </div>
               <div className="flex justify-between text-[var(--text-secondary)]">
                 <span>Gained weight</span>
@@ -364,7 +364,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
                 <div key={m.label} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span>🏆</span>
-                    <span className="text-sm text-[var(--text-secondary)]">{m.label} — {m.weight} lbs</span>
+                    <span className="text-sm text-[var(--text-secondary)]">{m.label} — {m.weight} kg</span>
                   </div>
                   <span className="mono text-sm text-[var(--btc)]">+{formatSats(m.sats)}</span>
                 </div>
