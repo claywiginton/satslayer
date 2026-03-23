@@ -246,7 +246,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
             <div className="card p-4 flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ background: '#22c55e15' }}>👟</div>
               <div>
-                <div className="font-semibold">8,000 Steps</div>
+                <div className="font-semibold">10,000 Steps</div>
                 <div className="text-xs text-[var(--text-muted)]">Walk, move, get outside</div>
               </div>
             </div>
