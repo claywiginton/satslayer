@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { CONFIG, formatSats } from '@/lib/data';
+import { CONFIG, formatSats, satsToUsd } from '@/lib/data';
 
 interface Props {
-  onComplete: (username: string, startWeight: number) => void;
+  onComplete: (username: string, startWeight: number) => Promise<void> | void;
   claimed?: boolean; // true if someone already onboarded
   onReset?: () => void;
 }
@@ -57,7 +57,6 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
       const data = await res.json();
       if (data.valid) {
         setVerified(true);
-        setTimeout(() => setStep(2), 800);
       } else {
         setVerifyError('Account not found on Strike. Check the username and try again.');
       }
@@ -67,9 +66,20 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
     setVerifying(false);
   };
 
-  const handleFinish = () => {
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+
+  const handleFinish = async () => {
+    setSaving(true);
+    setSaveError('');
     const sw = parseFloat(startWeight) || CONFIG.startWeight;
-    onComplete(username.trim().toLowerCase(), sw);
+    try {
+      await onComplete(username.trim().toLowerCase(), sw);
+    } catch (e) {
+      console.error('Finish error:', e);
+      setSaveError('Something went wrong. Try again.');
+    }
+    setSaving(false);
   };
 
   // ── STEP 0: LANDING ──
@@ -94,7 +104,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
           <div className="card p-5 mb-8 text-center">
             <div className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] mb-2">Total bounty pool</div>
             <div className="mono text-4xl text-[var(--btc)]">{formatSats(CONFIG.totalSats)}</div>
-            <div className="text-sm text-[var(--text-muted)] mt-1">sats · waiting for you</div>
+            <div className="text-sm text-[var(--text-muted)] mt-1">sats · ≈${satsToUsd(CONFIG.totalSats)}</div>
           </div>
 
           {claimed ? (
@@ -344,11 +354,11 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
             <div className="space-y-2 text-sm">
               <div className="flex justify-between text-[var(--text-secondary)]">
                 <span>Log your weight</span>
-                <span className="mono text-[var(--btc)]">+{formatSats(CONFIG.weighInBase)}</span>
+                <span className="mono text-[var(--btc)]">+{formatSats(CONFIG.weighInBase)} <span className="text-[10px] text-[var(--text-muted)]">(${satsToUsd(CONFIG.weighInBase)})</span></span>
               </div>
               <div className="flex justify-between text-[var(--text-secondary)]">
                 <span>Per kg lost</span>
-                <span className="mono text-[var(--btc)]">+{formatSats(CONFIG.weighInPerUnit)}</span>
+                <span className="mono text-[var(--btc)]">+{formatSats(CONFIG.weighInPerUnit)} <span className="text-[10px] text-[var(--text-muted)]">(${satsToUsd(CONFIG.weighInPerUnit)})</span></span>
               </div>
               <div className="flex justify-between text-[var(--text-secondary)]">
                 <span>Gained weight</span>
@@ -366,7 +376,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
                     <span>🏆</span>
                     <span className="text-sm text-[var(--text-secondary)]">{m.label} — {m.weight} kg</span>
                   </div>
-                  <span className="mono text-sm text-[var(--btc)]">+{formatSats(m.sats)}</span>
+                  <span className="mono text-sm text-[var(--btc)]">+{formatSats(m.sats)} <span className="text-[var(--text-muted)] text-[10px]">(${satsToUsd(m.sats)})</span></span>
                 </div>
               ))}
             </div>
@@ -376,14 +386,17 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
           <div className="text-center mb-4">
             <div className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] mb-2">Your bounty is funded</div>
             <div className="mono text-3xl text-[var(--btc)]">{formatSats(CONFIG.totalSats)} sats</div>
-            <div className="text-xs text-[var(--text-muted)] mt-1">are waiting for you</div>
+            <div className="text-sm text-[var(--text-muted)] mt-1">≈${satsToUsd(CONFIG.totalSats)} · waiting for you</div>
           </div>
+
+          {saveError && <p className="text-xs text-[var(--red)] text-center mb-3">{saveError}</p>}
 
           <button
             onClick={handleFinish}
-            className="w-full py-5 rounded-2xl text-lg font-bold display tracking-wider bg-[var(--btc)] text-black active:scale-[0.98] transition-all glow-btc"
+            disabled={saving}
+            className="w-full py-5 rounded-2xl text-lg font-bold display tracking-wider bg-[var(--btc)] text-black active:scale-[0.98] transition-all glow-btc disabled:opacity-50"
           >
-            LET&apos;S GO — DAY 1 STARTS NOW
+            {saving ? 'SETTING UP...' : 'LET\u0027S GO \u2014 DAY 1 STARTS NOW'}
           </button>
         </div>
       </div>
