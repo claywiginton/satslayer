@@ -38,10 +38,10 @@ export const CONFIG = {
 
 export type HabitType = 'steps' | 'workout' | 'calories';
 
-export const HABITS: { type: HabitType; label: string; icon: string; description: string; color: string }[] = [
-  { type: 'steps', label: 'Steps', icon: '👟', description: 'Hit 8,000 steps', color: '#22c55e' },
-  { type: 'workout', label: 'Workout', icon: '💪', description: '30+ min exercise', color: '#f7931a' },
-  { type: 'calories', label: 'Calories', icon: '🍽', description: `Under ${CONFIG.calorieTarget.toLocaleString()} cal`, color: '#a855f7' },
+export const HABITS: { type: HabitType; label: string; icon: string; description: string; color: string; inputType: 'number' | 'boolean'; unit: string; threshold: number; thresholdDir: 'gte' | 'lte' }[] = [
+  { type: 'steps', label: 'Steps', icon: '👟', description: 'Hit 8,000 steps', color: '#22c55e', inputType: 'number', unit: 'steps', threshold: 8000, thresholdDir: 'gte' },
+  { type: 'workout', label: 'Workout', icon: '💪', description: '30+ min exercise', color: '#f7931a', inputType: 'boolean', unit: '', threshold: 1, thresholdDir: 'gte' },
+  { type: 'calories', label: 'Calories', icon: '🍽', description: `Under ${CONFIG.calorieTarget.toLocaleString()} cal`, color: '#a855f7', inputType: 'number', unit: 'cal', threshold: CONFIG.calorieTarget, thresholdDir: 'lte' },
 ];
 
 export interface Milestone {
@@ -52,9 +52,16 @@ export interface Milestone {
 
 export interface DayLog {
   date: string;
-  steps: boolean;
-  workout: boolean;
-  calories: boolean;
+  steps: number;      // actual step count (0 = not logged)
+  workout: number;     // 1 = did it, 0 = didn't
+  calories: number;    // actual calorie count (0 = not logged)
+}
+
+// Check if a habit value meets the threshold
+export function habitMet(type: HabitType, value: number): boolean {
+  const habit = HABITS.find((h) => h.type === type)!;
+  if (habit.thresholdDir === 'gte') return value >= habit.threshold;
+  return value <= habit.threshold && value > 0; // lte but must have logged something
 }
 
 export interface WeighIn {

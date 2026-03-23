@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react';
 import {
   CONFIG, HABITS, formatSats, satsToUsd, getMultiplier, getSatsForHabit, getNextTier,
   getDayNumber, getWeekNumber, getTodayStr, calculateWeighInReward,
-  type HabitType, type HabitStreak, type PlayerStats, type WeighIn, type DayLog,
+  type HabitType, type HabitStreak, type PlayerStats, type WeighIn, type DayLog, habitMet,
 } from '@/lib/data';
 import {
-  getDayLogs, getTodayLog, toggleHabit, logSats, calculateStreaks,
+  getDayLogs, getTodayLog, saveHabitValue, logSats, calculateStreaks,
   getWeighIns, saveWeighIn, getPlayerStats,
   getPlayerProfile, savePlayerProfile, type PlayerProfile,
 } from '@/lib/db';
@@ -28,6 +28,7 @@ export default function SatSlayer() {
   const [wiWeight, setWiWeight] = useState('');
   const [wiSaving, setWiSaving] = useState(false);
   const [wiResult, setWiResult] = useState<{ sats: number; milestones: string[] } | null>(null);
+  const [habitInputs, setHabitInputs] = useState<Record<HabitType, string>>({ steps: '', workout: '', calories: '' });
 
   // Check if player has completed onboarding
   useEffect(() => {
@@ -98,29 +99,45 @@ export default function SatSlayer() {
   const lastWeight = profile ? (weighIns.length > 0 ? weighIns[weighIns.length - 1].weight : profile.startWeight) : CONFIG.startWeight;
   const alreadyWeighed = weighIns.some((w) => w.weekNumber === weekNumber);
 
-  const handleToggle = async (habit: HabitType) => {
+  const handleSubmitHabit = async (habit: HabitType) => {
     if (toggling) return;
-    const currentVal = todayLog ? todayLog[habit] : false;
-    if (currentVal) return;
+    const alreadyDone = todayLog ? habitMet(habit, todayLog[habit]) : false;
+    if (alreadyDone) return;
+
+    // Get the value to save
+    let value: number;
+    if (habit === 'workout') {
+      value = 1;
+    } else {
+      value = parseFloat(habitInputs[habit]);
+      if (isNaN(value) || value <= 0) return;
+      if (!habitMet(habit, value)) return; // doesn't meet threshold
+    }
 
     setToggling(habit);
-    const ok = await toggleHabit(habit, true);
+    const ok = await saveHabitValue(habit, value);
     if (ok) {
-      const streakData = calculateStreaks([...dayLogs, { date: getTodayStr(), steps: habit === 'steps' || (todayLog?.steps || false), workout: habit === 'workout' || (todayLog?.workout || false), calories: habit === 'calories' || (todayLog?.calories || false) }]);
+      const updatedLog: DayLog = {
+        date: getTodayStr(),
+        steps: habit === 'steps' ? value : (todayLog?.steps || 0),
+        workout: habit === 'workout' ? value : (todayLog?.workout || 0),
+        calories: habit === 'calories' ? value : (todayLog?.calories || 0),
+      };
+      const streakData = calculateStreaks([...dayLogs.filter(d => d.date !== getTodayStr()), updatedLog]);
       const sats = getSatsForHabit(streakData[habit].current);
       await logSats(getTodayStr(), habit, sats);
 
-      // Call payout API (mock for now)
       fetch('/api/payout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: profile.strikeUsername, sats, reason: `${habit} streak day ${streakData[habit].current}` }),
+        body: JSON.stringify({ username: profile!.strikeUsername, sats, reason: `${habit} streak day ${streakData[habit].current}` }),
       }).catch(() => {});
 
       const [s, t, d] = await Promise.all([getPlayerStats(), getTodayLog(), getDayLogs()]);
       setStats(s); setTodayLog(t); setDayLogs(d);
       setShowReward({ sats, habit });
       setTimeout(() => setShowReward(null), 2500);
+      setHabitInputs(prev => ({ ...prev, [habit]: '' }));
     }
     setToggling(null);
   };
@@ -199,21 +216,23 @@ export default function SatSlayer() {
               <div className="space-y-2">
                 {HABITS.map((habit) => {
                   const streak = streaks.find((s) => s.type === habit.type);
-                  const completed = todayLog ? todayLog[habit.type] : false;
+                  const todayVal = todayLog ? todayLog[habit.type] : 0;
+                  const completed = habitMet(habit.type, todayVal);
                   const isToggling = toggling === habit.type;
                   const nextTier = streak ? getNextTier(streak.currentStreak) : null;
+                  const inputVal = habitInputs[habit.type];
+                  const meetsThreshold = habit.inputType === 'boolean' || (inputVal && habitMet(habit.type, parseFloat(inputVal)));
 
                   return (
-                    <button
+                    <div
                       key={habit.type}
-                      onClick={() => handleToggle(habit.type)}
-                      disabled={completed || isToggling}
-                      className={`w-full rounded-xl p-3.5 text-left transition-all active:scale-[0.98] ${completed ? 'opacity-60' : ''}`}
+                      className={`rounded-xl p-3.5 transition-all ${completed ? 'opacity-60' : ''}`}
                       style={{
                         background: completed ? 'var(--bg-elevated)' : 'var(--bg)',
                         border: completed ? '1px solid var(--border)' : `1px solid ${habit.color}30`,
                       }}
                     >
+                      {/* Top row: icon, label, streak, sats */}
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0"
                           style={{ background: `${habit.color}15` }}>
@@ -231,15 +250,68 @@ export default function SatSlayer() {
                           <div className="text-[11px] text-[var(--text-muted)]">{habit.description}</div>
                         </div>
                         <div className="text-right shrink-0">
-                          <div className="mono text-sm" style={{ color: completed ? 'var(--green)' : 'var(--btc)' }}>
-                            {completed ? '✓' : `+${formatSats(streak?.satsPerCompletion || 500)}`}
-                          </div>
-                          {!completed && nextTier && (
-                            <div className="text-[9px] text-[var(--text-muted)]">{nextTier.nextMultiplier}× in {nextTier.daysUntil}d</div>
+                          {completed ? (
+                            <div>
+                              <div className="mono text-sm text-[var(--green)]">✓</div>
+                              <div className="text-[9px] text-[var(--text-muted)] mono">
+                                {habit.type === 'steps' ? `${todayVal.toLocaleString()} steps` : habit.type === 'calories' ? `${todayVal.toLocaleString()} cal` : 'Done'}
+                              </div>
+                            </div>
+                          ) : (
+                            <div>
+                              <div className="mono text-sm text-[var(--btc)]">+{formatSats(streak?.satsPerCompletion || 500)}</div>
+                              {nextTier && <div className="text-[9px] text-[var(--text-muted)]">{nextTier.nextMultiplier}× in {nextTier.daysUntil}d</div>}
+                            </div>
                           )}
                         </div>
                       </div>
-                    </button>
+
+                      {/* Input row — only show if not completed */}
+                      {!completed && (
+                        <div className="mt-3 flex items-center gap-2">
+                          {habit.inputType === 'number' ? (
+                            <>
+                              <input
+                                type="number"
+                                inputMode="numeric"
+                                placeholder={habit.type === 'steps' ? '8000' : '1800'}
+                                value={inputVal}
+                                onChange={(e) => setHabitInputs(prev => ({ ...prev, [habit.type]: e.target.value }))}
+                                className="flex-1 bg-[var(--bg-card)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm mono text-center focus:outline-none focus:border-[var(--btc)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              />
+                              <span className="text-[11px] text-[var(--text-muted)] w-10">{habit.unit}</span>
+                              <button
+                                onClick={() => handleSubmitHabit(habit.type)}
+                                disabled={!meetsThreshold || isToggling}
+                                className={`px-4 py-2.5 rounded-lg text-sm font-bold display tracking-wider transition-all active:scale-95 ${
+                                  meetsThreshold ? 'bg-[var(--btc)] text-black' : 'bg-[var(--bg-card)] text-[var(--text-muted)] border border-[var(--border)]'
+                                } disabled:opacity-40`}
+                              >
+                                {isToggling ? '...' : 'LOG'}
+                              </button>
+                            </>
+                          ) : (
+                            /* Workout: just a yes button */
+                            <button
+                              onClick={() => handleSubmitHabit(habit.type)}
+                              disabled={isToggling}
+                              className="w-full py-2.5 rounded-lg text-sm font-bold display tracking-wider bg-[var(--btc)] text-black active:scale-[0.98] transition-all disabled:opacity-40"
+                            >
+                              {isToggling ? 'LOGGING...' : 'YES — I WORKED OUT'}
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Threshold hint for number inputs */}
+                      {!completed && habit.inputType === 'number' && inputVal && !meetsThreshold && (
+                        <div className="mt-1.5 text-[10px] text-[var(--red)] ml-[52px]">
+                          {habit.thresholdDir === 'gte'
+                            ? `Need at least ${habit.threshold.toLocaleString()} ${habit.unit}`
+                            : `Must be under ${habit.threshold.toLocaleString()} ${habit.unit}`}
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>

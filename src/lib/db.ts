@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import {
   CONFIG, type HabitType, type DayLog, type WeighIn, type HabitStreak, type PlayerStats,
-  getMultiplier, getSatsForHabit, getTodayStr, calculateWeighInReward, checkMilestones,
+  getMultiplier, getSatsForHabit, getTodayStr, calculateWeighInReward, checkMilestones, habitMet,
 } from './data';
 
 // ── PLAYER PROFILE ──
@@ -58,9 +58,9 @@ export async function getDayLogs(): Promise<DayLog[]> {
   if (error) { console.error('Load day_logs failed:', error); return []; }
   return (data || []).map((d: any) => ({
     date: d.date,
-    steps: d.steps,
-    workout: d.workout,
-    calories: d.calories,
+    steps: Number(d.steps) || 0,
+    workout: Number(d.workout) || 0,
+    calories: Number(d.calories) || 0,
   }));
 }
 
@@ -74,13 +74,12 @@ export async function getTodayLog(): Promise<DayLog | null> {
 
   if (error || !data || data.length === 0) return null;
   const d = data[0];
-  return { date: d.date, steps: d.steps, workout: d.workout, calories: d.calories };
+  return { date: d.date, steps: Number(d.steps) || 0, workout: Number(d.workout) || 0, calories: Number(d.calories) || 0 };
 }
 
-export async function toggleHabit(habit: HabitType, value: boolean): Promise<boolean> {
+export async function saveHabitValue(habit: HabitType, value: number): Promise<boolean> {
   const today = getTodayStr();
 
-  // Upsert today's log
   const existing = await getTodayLog();
   if (existing) {
     const { error } = await supabase
@@ -89,7 +88,7 @@ export async function toggleHabit(habit: HabitType, value: boolean): Promise<boo
       .eq('date', today);
     if (error) { console.error('Update habit failed:', error); return false; }
   } else {
-    const row: any = { date: today, steps: false, workout: false, calories: false };
+    const row: any = { date: today, steps: 0, workout: 0, calories: 0 };
     row[habit] = value;
     const { error } = await supabase.from('day_logs').insert(row);
     if (error) { console.error('Insert day_log failed:', error); return false; }
@@ -107,13 +106,11 @@ export function calculateStreaks(logs: DayLog[]): Record<HabitType, { current: n
     let longest = 0;
     let current = 0;
 
-    // Sort by date ascending
     const sorted = [...logs].sort((a, b) => a.date.localeCompare(b.date));
 
     for (let i = 0; i < sorted.length; i++) {
-      const completed = sorted[i][habit];
+      const completed = habitMet(habit, sorted[i][habit]);
       if (completed) {
-        // Check if consecutive day
         if (i === 0) {
           current = 1;
         } else {
@@ -128,14 +125,12 @@ export function calculateStreaks(logs: DayLog[]): Record<HabitType, { current: n
       }
     }
 
-    // Verify current streak is actually current (connected to today or yesterday)
     if (sorted.length > 0) {
       const lastLog = sorted[sorted.length - 1];
       const lastDate = new Date(lastLog.date);
       const today = new Date(getTodayStr());
       const diffFromToday = Math.round((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
-
-      if (diffFromToday > 1 || !lastLog[habit]) {
+      if (diffFromToday > 1 || !habitMet(habit, lastLog[habit])) {
         current = 0;
       }
     }
@@ -236,7 +231,7 @@ export async function getPlayerStats(): Promise<PlayerStats> {
     };
   });
 
-  const daysWithAnyHabit = dayLogs.filter((d) => d.steps || d.workout || d.calories).length;
+  const daysWithAnyHabit = dayLogs.filter((d) => d.steps > 0 || d.workout > 0 || d.calories > 0).length;
 
   return {
     totalSatsEarned: totalSatsFromLog,
