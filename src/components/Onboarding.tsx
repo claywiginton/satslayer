@@ -73,11 +73,13 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
     setSaving(true);
     setSaveError('');
     const sw = parseFloat(startWeight) || CONFIG.startWeight;
+    console.log('handleFinish called with:', username.trim().toLowerCase(), sw);
     try {
       await onComplete(username.trim().toLowerCase(), sw);
-    } catch (e) {
+      console.log('onComplete finished successfully');
+    } catch (e: any) {
       console.error('Finish error:', e);
-      setSaveError('Something went wrong. Try again.');
+      setSaveError(e?.message || 'Something went wrong. Try again.');
     }
     setSaving(false);
   };
@@ -396,7 +398,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
             disabled={saving}
             className="w-full py-5 rounded-2xl text-lg font-bold display tracking-wider bg-[var(--btc)] text-black active:scale-[0.98] transition-all glow-btc disabled:opacity-50"
           >
-            {saving ? 'SETTING UP...' : 'LET\u0027S GO \u2014 DAY 1 STARTS NOW'}
+            {saving ? 'SETTING UP...' : "LET'S GO — DAY 1 STARTS NOW"}
           </button>
         </div>
       </div>

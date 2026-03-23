@@ -60,16 +60,21 @@ export default function SatSlayer() {
   }, [profile]);
 
   const handleOnboardingComplete = async (username: string, startWeight: number) => {
+    console.log('handleOnboardingComplete called:', username, startWeight);
     const saved = await savePlayerProfile(username, startWeight, CONFIG.goalWeight);
     console.log('Profile save result:', saved);
     if (saved) {
-      setProfile({
+      const newProfile = {
         strikeUsername: username,
         startWeight,
         goalWeight: CONFIG.goalWeight,
         startDate: getTodayStr(),
         createdAt: new Date().toISOString(),
-      });
+      };
+      console.log('Setting profile:', newProfile);
+      setProfile(newProfile);
+    } else {
+      throw new Error('Failed to save profile to database');
     }
   };
 
