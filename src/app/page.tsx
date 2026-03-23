@@ -105,6 +105,15 @@ export default function SatSlayer() {
       setShowReward({ sats, habit });
       setTimeout(() => setShowReward(null), 2500);
       setHabitInputs(prev => ({ ...prev, [habit]: '' }));
+
+      // Check if all 3 habits are now complete — send Telegram congrats
+      if (t) {
+        const allDone = HABITS.every(h => habitMet(h.type, t[h.type]));
+        if (allDone) {
+          const todaySats = s?.totalSatsEarned || 0;
+          fetch('/api/telegram', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'all_complete', data: { totalSats: sats } }) }).catch(() => {});
+        }
+      }
     }
     setToggling(null);
   };

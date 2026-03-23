@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron?trigger=evening",
+      "schedule": "0 20 * * *"
+    },
+    {
+      "path": "/api/cron?trigger=weighin",
+      "schedule": "0 9 * * 0"
+    },
+    {
+      "path": "/api/cron?trigger=milestone",
+      "schedule": "0 12 * * 1"
+    }
+  ]
+}
