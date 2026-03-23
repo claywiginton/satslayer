@@ -248,7 +248,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
       <div className="min-h-screen relative z-10 flex flex-col justify-center px-6">
         <div className="max-w-sm mx-auto w-full">
           <div className="flex gap-1.5 mb-8 justify-center">
-            {[0,1,2,3,4].map((i) => <div key={i} className="h-1 rounded-full w-8" style={{ background: i <= 2 ? 'var(--btc)' : 'var(--border)' }} />)}
+            {[0,1,2,3,4,5].map((i) => <div key={i} className="h-1 rounded-full w-6" style={{ background: i <= 2 ? 'var(--btc)' : 'var(--border)' }} />)}
           </div>
 
           <h2 className="display text-2xl mb-2 text-center">3 DAILY HABITS</h2>
@@ -296,7 +296,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
       <div className="min-h-screen relative z-10 flex flex-col justify-center px-6">
         <div className="max-w-sm mx-auto w-full">
           <div className="flex gap-1.5 mb-8 justify-center">
-            {[0,1,2,3,4].map((i) => <div key={i} className="h-1 rounded-full w-8" style={{ background: i <= 3 ? 'var(--btc)' : 'var(--border)' }} />)}
+            {[0,1,2,3,4,5].map((i) => <div key={i} className="h-1 rounded-full w-6" style={{ background: i <= 3 ? 'var(--btc)' : 'var(--border)' }} />)}
           </div>
 
           <h2 className="display text-2xl mb-2 text-center" style={{ color: 'var(--btc)' }}>THE STREAK MULTIPLIER</h2>
@@ -340,13 +340,124 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
     );
   }
 
-  // ── STEP 4: WEIGH-INS + MILESTONES + LAUNCH ──
+  // ── STEP 4: THE PLAN — SCIENCE & MATH ──
   if (step === 4) {
+    const sw = parseFloat(startWeight) || CONFIG.startWeight;
+    const gw = parseFloat(goalWeight) || CONFIG.goalWeight;
+    const toLose = Math.round((sw - gw) * 10) / 10;
+    const weeksAvail = 39; // April → Dec 2026
+    const ratePerWeek = Math.round((toLose / weeksAvail) * 100) / 100;
+
     return (
       <div className="min-h-screen relative z-10 flex flex-col justify-center px-6">
         <div className="max-w-sm mx-auto w-full">
           <div className="flex gap-1.5 mb-8 justify-center">
-            {[0,1,2,3,4].map((i) => <div key={i} className="h-1 rounded-full w-8" style={{ background: 'var(--btc)' }} />)}
+            {[0,1,2,3,4,5].map((i) => <div key={i} className="h-1 rounded-full w-6" style={{ background: i <= 4 ? 'var(--btc)' : 'var(--border)' }} />)}
+          </div>
+
+          <h2 className="display text-2xl mb-2 text-center">THE PLAN</h2>
+          <p className="text-sm text-[var(--text-muted)] text-center mb-6">The math behind your transformation</p>
+
+          {/* The numbers */}
+          <div className="card p-5 mb-4">
+            <div className="grid grid-cols-3 gap-3 text-center mb-4">
+              <div>
+                <div className="text-[9px] font-semibold tracking-widest uppercase text-[var(--text-muted)] mb-1">Now</div>
+                <div className="mono text-xl">{sw} kg</div>
+              </div>
+              <div>
+                <div className="text-[9px] font-semibold tracking-widest uppercase text-[var(--text-muted)] mb-1">Target</div>
+                <div className="mono text-xl text-[var(--btc)]">{gw} kg</div>
+              </div>
+              <div>
+                <div className="text-[9px] font-semibold tracking-widest uppercase text-[var(--text-muted)] mb-1">To lose</div>
+                <div className="mono text-xl text-[var(--green)]">{toLose} kg</div>
+              </div>
+            </div>
+            <div className="h-[1px] bg-[var(--border)] my-3" />
+            <div className="flex justify-between text-[12px] text-[var(--text-secondary)]">
+              <span>Timeline</span>
+              <span className="mono font-semibold">{weeksAvail} weeks (Apr–Dec)</span>
+            </div>
+            <div className="flex justify-between text-[12px] text-[var(--text-secondary)] mt-1.5">
+              <span>Required rate</span>
+              <span className="mono font-semibold text-[var(--btc)]">{ratePerWeek} kg/week</span>
+            </div>
+          </div>
+
+          {/* The science */}
+          <div className="card p-5 mb-4">
+            <div className="text-[10px] font-semibold tracking-widest uppercase text-[var(--btc)] mb-3">How this works</div>
+            <div className="space-y-3 text-[12px] text-[var(--text-secondary)] leading-relaxed">
+              <div className="flex gap-3">
+                <span className="text-base shrink-0 mt-0.5">🍽</span>
+                <div><span className="text-[var(--text)] font-semibold">2,500 cal/day</span> creates a 300–500 cal deficit from your maintenance (~3,000 cal). That alone = 0.3–0.5 kg/week.</div>
+              </div>
+              <div className="flex gap-3">
+                <span className="text-base shrink-0 mt-0.5">👟</span>
+                <div><span className="text-[var(--text)] font-semibold">10,000 steps/day</span> burns ~400–600 additional calories. Combined with diet = 0.5–0.8 kg/week.</div>
+              </div>
+              <div className="flex gap-3">
+                <span className="text-base shrink-0 mt-0.5">💪</span>
+                <div><span className="text-[var(--text)] font-semibold">5 workouts/week</span> adds another 200–400 cal burn per session and builds muscle, which increases metabolism. Total projected = <span className="text-[var(--green)] font-semibold">0.7–1.0 kg/week</span>.</div>
+              </div>
+            </div>
+          </div>
+
+          {/* The verdict */}
+          <div className="card p-5 mb-4" style={{ borderColor: 'var(--green)20' }}>
+            <div className="text-[10px] font-semibold tracking-widest uppercase text-[var(--green)] mb-2">The verdict</div>
+            <p className="text-[13px] text-[var(--text-secondary)] leading-relaxed">
+              You need <span className="mono font-semibold text-[var(--text)]">{ratePerWeek} kg/week</span>. The plan delivers <span className="mono font-semibold text-[var(--green)]">0.7–1.0 kg/week</span>. 
+              {ratePerWeek <= 1.0 ? (
+                <span> This is <span className="text-[var(--green)] font-semibold">achievable and within safe weight loss guidelines</span> (0.5–1.0 kg/week recommended). Stay consistent and the math works.</span>
+              ) : (
+                <span> This is aggressive but doable with consistency. The first few weeks will show larger drops. Stay locked in.</span>
+              )}
+            </p>
+          </div>
+
+          <div className="card p-4" style={{ background: 'var(--bg)' }}>
+            <div className="text-[10px] font-semibold tracking-widest uppercase text-[var(--text-muted)] mb-2">The non-negotiables</div>
+            <div className="space-y-1.5 text-[12px] text-[var(--text-secondary)]">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-[var(--btc)]" />
+                <span>Track every calorie — MyFitnessPal, Lose It, whatever works</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-[var(--btc)]" />
+                <span>Weigh yourself weekly, same day, same time, same conditions</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-[var(--btc)]" />
+                <span>Protein target: 130g+ daily to preserve muscle during deficit</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-[var(--btc)]" />
+                <span>Water: 3+ liters per day — hunger is often dehydration</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-[var(--btc)]" />
+                <span>Sleep: 7+ hours — poor sleep kills fat loss and willpower</span>
+              </div>
+            </div>
+          </div>
+
+          <button onClick={() => setStep(5)} className="w-full mt-6 py-4 rounded-2xl text-base font-bold display tracking-wider bg-[var(--btc)] text-black active:scale-[0.98] transition-all">
+            NEXT
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── STEP 5: WEIGH-INS + MILESTONES + LAUNCH ──
+  if (step === 5) {
+    return (
+      <div className="min-h-screen relative z-10 flex flex-col justify-center px-6">
+        <div className="max-w-sm mx-auto w-full">
+          <div className="flex gap-1.5 mb-8 justify-center">
+            {[0,1,2,3,4,5].map((i) => <div key={i} className="h-1 rounded-full w-6" style={{ background: 'var(--btc)' }} />)}
           </div>
 
           <h2 className="display text-2xl mb-2 text-center">WEEKLY WEIGH-INS</h2>
