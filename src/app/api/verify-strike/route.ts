@@ -7,6 +7,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Username required' }, { status: 400 });
     }
 
+    // Test mode: skip Strike verification
+    const testMode = process.env.TEST_MODE === 'true';
+    if (testMode) {
+      return NextResponse.json({ valid: true, handle: username });
+    }
+
     // Try to create a tiny payment quote to verify the account exists
     const strikeKey = process.env.STRIKE_API_KEY;
     if (!strikeKey) {
