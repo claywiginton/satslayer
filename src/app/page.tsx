@@ -21,12 +21,25 @@ export default function SatSlayer() {
   const weekNumber = getCurrentWeekNumber();
 
   useEffect(() => {
-    Promise.all([getPlayerStats(), getCompletedChallenges(), getWeighIns()]).then(([s, c, w]) => {
-      setStats(s);
-      setCompletedDays(c);
-      setWeighIns(w);
-      setLoading(false);
-    });
+    Promise.all([getPlayerStats(), getCompletedChallenges(), getWeighIns()])
+      .then(([s, c, w]) => {
+        setStats(s);
+        setCompletedDays(c);
+        setWeighIns(w);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Failed to load data:', err);
+        // Still show the app with defaults
+        setStats({
+          totalSatsEarned: 0, totalSatsAvailable: CONFIG.totalSats,
+          currentWeight: CONFIG.startWeight, startWeight: CONFIG.startWeight,
+          goalWeight: CONFIG.goalWeight, totalLost: 0, currentStreak: 0,
+          longestStreak: 0, challengesCompleted: 0, challengesTotal: 365,
+          weighInsLogged: 0, milestonesHit: [], comebackPool: 0,
+        });
+        setLoading(false);
+      });
   }, []);
 
   const todayChallenge = getChallengeForDay(dayNumber);
