@@ -74,7 +74,7 @@ export default function SatSlayer() {
       console.log('Setting profile:', newProfile);
       setProfile(newProfile);
     } else {
-      throw new Error('Failed to save profile to database');
+      throw new Error('Failed to save profile — check browser console for details');
     }
   };
 

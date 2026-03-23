@@ -36,14 +36,16 @@ export async function savePlayerProfile(
   startWeight: number,
   goalWeight: number
 ): Promise<boolean> {
-  const { error } = await supabase.from('player_profile').insert({
+  console.log('savePlayerProfile: inserting', { strikeUsername, startWeight, goalWeight, start_date: getTodayStr() });
+  const { data, error } = await supabase.from('player_profile').insert({
     strike_username: strikeUsername,
     start_weight: startWeight,
     goal_weight: goalWeight,
     start_date: getTodayStr(),
-  });
+  }).select();
 
-  if (error) { console.error('Save profile failed:', error); return false; }
+  console.log('savePlayerProfile result:', { data, error });
+  if (error) { console.error('Save profile failed:', error.message, error.details, error.hint, error.code); return false; }
   return true;
 }
 
