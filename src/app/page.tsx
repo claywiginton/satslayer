@@ -133,7 +133,7 @@ export default function SatSlayer() {
         <div className="fixed top-16 left-1/2 -translate-x-1/2 z-[60] sat-pop">
           <div className="px-8 py-4 rounded-2xl text-center" style={{ background: 'linear-gradient(135deg, var(--btc), #e8820e)', boxShadow: '0 8px 32px rgba(247,147,26,0.3)' }}>
             <div className="text-2xl font-bold display text-black">+{formatSats(showReward.sats)}</div>
-            <div className="text-xs text-black/60">{showReward.habit} · ${satsToUsd(showReward.sats)}</div>
+            <div className="text-xs text-black/60">{showReward.habit}</div>
           </div>
         </div>
       )}
@@ -150,7 +150,7 @@ export default function SatSlayer() {
           <div className="flex items-center gap-3">
             <div className="text-right">
               <div className="mono text-sm text-[var(--btc)]">{formatSats(stats?.totalSatsEarned || 0)}</div>
-              <div className="text-[9px] text-[var(--text-muted)] mono">${satsToUsd(stats?.totalSatsEarned || 0)}</div>
+              <div className="text-[9px] text-[var(--text-muted)] mono">sats earned</div>
             </div>
             <button onClick={() => setWeightUnit(wu === 'kg' ? 'lbs' : 'kg')}
               className="text-[10px] mono px-2 py-1 rounded-md border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-hover)] active:scale-95 transition-all">
@@ -299,7 +299,7 @@ export default function SatSlayer() {
               {[
                 { label: 'Weight', value: `${dw(stats?.currentWeight || profile.startWeight)}`, sub: stats && stats.totalLost > 0 ? `↓${dw(stats.totalLost)} ${wu}` : wu, subColor: stats && stats.totalLost > 0 ? 'var(--green)' : 'var(--text-muted)' },
                 { label: 'Days', value: `${stats?.totalDaysLogged || 0}`, sub: 'logged', subColor: 'var(--text-muted)' },
-                { label: 'Earned', value: `$${satsToUsd(stats?.totalSatsEarned || 0)}`, sub: `${formatSats(stats?.totalSatsEarned || 0)} sats`, subColor: 'var(--btc)' },
+                { label: 'Earned', value: formatSats(stats?.totalSatsEarned || 0), sub: 'sats', subColor: 'var(--btc)' },
               ].map((item) => (
                 <div key={item.label} className="card p-3.5 text-center">
                   <div className="text-[9px] font-semibold tracking-widest uppercase text-[var(--text-muted)] mb-1">{item.label}</div>
@@ -352,7 +352,6 @@ export default function SatSlayer() {
               <div className="card p-8 text-center">
                 <div className="text-3xl mb-3">🎉</div>
                 <div className="display text-xl text-[var(--btc)] mb-1">+{formatSats(wiResult.sats)} sats</div>
-                <div className="text-[12px] text-[var(--text-muted)]">${satsToUsd(wiResult.sats)}</div>
                 {wiResult.milestones.map((m) => (
                   <div key={m} className="mt-4 py-2.5 px-4 rounded-xl text-[13px] font-bold display text-black" style={{ background: 'linear-gradient(135deg, var(--btc), #e8820e)' }}>🏆 {m}</div>
                 ))}
@@ -483,7 +482,7 @@ export default function SatSlayer() {
 
             <div className="grid grid-cols-2 gap-2.5">
               <div className="card p-4 text-center"><div className="text-[9px] font-semibold tracking-widest uppercase text-[var(--text-muted)]">Days logged</div><div className="mono text-xl mt-1">{stats.totalDaysLogged}</div></div>
-              <div className="card p-4 text-center"><div className="text-[9px] font-semibold tracking-widest uppercase text-[var(--text-muted)]">Weigh-ins</div><div className="mono text-xl mt-1">{stats.weighInsLogged}<span className="text-sm text-[var(--text-muted)]">/52</span></div></div>
+              <div className="card p-4 text-center"><div className="text-[9px] font-semibold tracking-widest uppercase text-[var(--text-muted)]">Weigh-ins</div><div className="mono text-xl mt-1">{stats.weighInsLogged}<span className="text-sm text-[var(--text-muted)]">/{CONFIG.totalWeeks}</span></div></div>
             </div>
           </div>
         )}

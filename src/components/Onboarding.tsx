@@ -153,7 +153,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
               >
                 ACCEPT THE BOUNTY
               </button>
-              <p className="text-[10px] text-[var(--text-muted)] mt-3">52 weeks · 3 daily habits · unlimited potential</p>
+              <p className="text-[10px] text-[var(--text-muted)] mt-3">{CONFIG.totalWeeks} weeks · 3 daily habits · unlimited potential</p>
             </>
           )}
         </div>
@@ -345,7 +345,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
     const sw = parseFloat(startWeight) || CONFIG.startWeight;
     const gw = parseFloat(goalWeight) || CONFIG.goalWeight;
     const toLose = Math.round((sw - gw) * 10) / 10;
-    const weeksAvail = 39; // April → Dec 2026
+    const weeksAvail = CONFIG.totalWeeks;
     const ratePerWeek = Math.round((toLose / weeksAvail) * 100) / 100;
 
     return (

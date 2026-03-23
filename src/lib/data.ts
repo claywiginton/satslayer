@@ -9,6 +9,7 @@ export const CONFIG = {
   defaultUnit: 'kg' as WeightUnit,
   calorieTarget: 2500,
   startDate: '2026-04-01',
+  totalWeeks: 39, // April → December 2026
   totalSats: 2_000_000,
 
   // Base sats per habit (before multiplier)
