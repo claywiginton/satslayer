@@ -25,6 +25,9 @@ export default function SatSlayer() {
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState<HabitType | null>(null);
   const [showReward, setShowReward] = useState<{ sats: number; habit: string } | null>(null);
+  const [wiWeight, setWiWeight] = useState('');
+  const [wiSaving, setWiSaving] = useState(false);
+  const [wiResult, setWiResult] = useState<{ sats: number; milestones: string[] } | null>(null);
 
   // Check if player has completed onboarding
   useEffect(() => {
@@ -92,6 +95,8 @@ export default function SatSlayer() {
 
   const dayNumber = getDayNumber();
   const weekNumber = getWeekNumber();
+  const lastWeight = profile ? (weighIns.length > 0 ? weighIns[weighIns.length - 1].weight : profile.startWeight) : CONFIG.startWeight;
+  const alreadyWeighed = weighIns.some((w) => w.weekNumber === weekNumber);
 
   const handleToggle = async (habit: HabitType) => {
     if (toggling) return;
@@ -119,13 +124,6 @@ export default function SatSlayer() {
     }
     setToggling(null);
   };
-
-  // Weigh-in state
-  const [wiWeight, setWiWeight] = useState('');
-  const [wiSaving, setWiSaving] = useState(false);
-  const [wiResult, setWiResult] = useState<{ sats: number; milestones: string[] } | null>(null);
-  const lastWeight = weighIns.length > 0 ? weighIns[weighIns.length - 1].weight : profile.startWeight;
-  const alreadyWeighed = weighIns.some((w) => w.weekNumber === weekNumber);
 
   const handleWeighIn = async () => {
     if (!wiWeight || wiSaving) return;
