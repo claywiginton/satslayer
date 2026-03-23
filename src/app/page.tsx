@@ -60,14 +60,17 @@ export default function SatSlayer() {
   }, [profile]);
 
   const handleOnboardingComplete = async (username: string, startWeight: number) => {
-    await savePlayerProfile(username, startWeight, CONFIG.goalWeight);
-    setProfile({
-      strikeUsername: username,
-      startWeight,
-      goalWeight: CONFIG.goalWeight,
-      startDate: getTodayStr(),
-      createdAt: new Date().toISOString(),
-    });
+    const saved = await savePlayerProfile(username, startWeight, CONFIG.goalWeight);
+    console.log('Profile save result:', saved);
+    if (saved) {
+      setProfile({
+        strikeUsername: username,
+        startWeight,
+        goalWeight: CONFIG.goalWeight,
+        startDate: getTodayStr(),
+        createdAt: new Date().toISOString(),
+      });
+    }
   };
 
   // Show loading while checking profile
@@ -125,6 +128,7 @@ export default function SatSlayer() {
 
     setToggling(habit);
     const ok = await saveHabitValue(habit, value);
+    console.log('saveHabitValue result:', ok, 'habit:', habit, 'value:', value);
     if (ok) {
       const updatedLog: DayLog = {
         date: getTodayStr(),
@@ -134,6 +138,7 @@ export default function SatSlayer() {
       };
       const streakData = calculateStreaks([...dayLogs.filter(d => d.date !== getTodayStr()), updatedLog]);
       const sats = getSatsForHabit(streakData[habit].current);
+      console.log('Streak data:', habit, streakData[habit], 'sats:', sats);
       await logSats(getTodayStr(), habit, sats);
 
       fetch('/api/payout', {
