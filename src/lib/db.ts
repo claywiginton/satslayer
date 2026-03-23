@@ -4,6 +4,49 @@ import {
   getMultiplier, getSatsForHabit, getTodayStr, calculateWeighInReward, checkMilestones,
 } from './data';
 
+// ── PLAYER PROFILE ──
+
+export interface PlayerProfile {
+  strikeUsername: string;
+  startWeight: number;
+  goalWeight: number;
+  startDate: string;
+  createdAt: string;
+}
+
+export async function getPlayerProfile(): Promise<PlayerProfile | null> {
+  const { data, error } = await supabase
+    .from('player_profile')
+    .select('*')
+    .limit(1);
+
+  if (error || !data || data.length === 0) return null;
+  const d = data[0];
+  return {
+    strikeUsername: d.strike_username,
+    startWeight: Number(d.start_weight),
+    goalWeight: Number(d.goal_weight),
+    startDate: d.start_date,
+    createdAt: d.created_at,
+  };
+}
+
+export async function savePlayerProfile(
+  strikeUsername: string,
+  startWeight: number,
+  goalWeight: number
+): Promise<boolean> {
+  const { error } = await supabase.from('player_profile').insert({
+    strike_username: strikeUsername,
+    start_weight: startWeight,
+    goal_weight: goalWeight,
+    start_date: getTodayStr(),
+  });
+
+  if (error) { console.error('Save profile failed:', error); return false; }
+  return true;
+}
+
 // ── DAY LOGS ──
 
 export async function getDayLogs(): Promise<DayLog[]> {

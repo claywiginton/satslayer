@@ -6,6 +6,7 @@ export const CONFIG = {
   goalWeight: 250,
   calorieTarget: 2000,
   startDate: '2026-04-01',
+  totalSats: 2_000_000,
 
   // Base sats per habit (before multiplier)
   baseSatsPerHabit: 500,

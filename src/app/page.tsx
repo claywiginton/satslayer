@@ -9,9 +9,13 @@ import {
 import {
   getDayLogs, getTodayLog, toggleHabit, logSats, calculateStreaks,
   getWeighIns, saveWeighIn, getPlayerStats,
+  getPlayerProfile, savePlayerProfile, type PlayerProfile,
 } from '@/lib/db';
+import Onboarding from '@/components/Onboarding';
 
 export default function SatSlayer() {
+  const [profile, setProfile] = useState<PlayerProfile | null>(null);
+  const [profileChecked, setProfileChecked] = useState(false);
   const [tab, setTab] = useState<'today' | 'weigh-in' | 'stats'>('today');
   const [stats, setStats] = useState<PlayerStats | null>(null);
   const [todayLog, setTodayLog] = useState<DayLog | null>(null);
@@ -21,32 +25,84 @@ export default function SatSlayer() {
   const [toggling, setToggling] = useState<HabitType | null>(null);
   const [showReward, setShowReward] = useState<{ sats: number; habit: string } | null>(null);
 
-  const dayNumber = getDayNumber();
-  const weekNumber = getWeekNumber();
-
+  // Check if player has completed onboarding
   useEffect(() => {
+    getPlayerProfile().then((p) => {
+      setProfile(p);
+      setProfileChecked(true);
+    }).catch(() => setProfileChecked(true));
+  }, []);
+
+  // Load app data once profile exists
+  useEffect(() => {
+    if (!profile) return;
     Promise.all([getPlayerStats(), getTodayLog(), getDayLogs(), getWeighIns()])
       .then(([s, t, d, w]) => { setStats(s); setTodayLog(t); setDayLogs(d); setWeighIns(w); setLoading(false); })
       .catch(() => {
-        setStats({ totalSatsEarned: 0, currentWeight: CONFIG.startWeight, totalLost: 0, streaks: HABITS.map((h) => ({ type: h.type, currentStreak: 0, multiplier: 1, satsPerCompletion: 500, longestStreak: 0 })), totalDaysLogged: 0, weighInsLogged: 0, milestonesHit: [] });
+        setStats({ totalSatsEarned: 0, currentWeight: profile.startWeight, totalLost: 0, streaks: HABITS.map((h) => ({ type: h.type, currentStreak: 0, multiplier: 1, satsPerCompletion: 500, longestStreak: 0 })), totalDaysLogged: 0, weighInsLogged: 0, milestonesHit: [] });
         setLoading(false);
       });
-  }, []);
+  }, [profile]);
+
+  const handleOnboardingComplete = async (username: string, startWeight: number) => {
+    await savePlayerProfile(username, startWeight, CONFIG.goalWeight);
+    setProfile({
+      strikeUsername: username,
+      startWeight,
+      goalWeight: CONFIG.goalWeight,
+      startDate: getTodayStr(),
+      createdAt: new Date().toISOString(),
+    });
+  };
+
+  // Show loading while checking profile
+  if (!profileChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center relative z-10">
+        <div className="w-10 h-10 border-2 border-[var(--border)] border-t-[var(--btc)] rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Show onboarding if no profile
+  if (!profile) {
+    return <Onboarding onComplete={handleOnboardingComplete} />;
+  }
+
+  // Show loading while fetching data
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center relative z-10">
+        <div className="text-center">
+          <div className="w-10 h-10 border-2 border-[var(--border)] border-t-[var(--btc)] rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-sm text-[var(--text-muted)]">Loading bounties...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const dayNumber = getDayNumber();
+  const weekNumber = getWeekNumber();
 
   const handleToggle = async (habit: HabitType) => {
     if (toggling) return;
     const currentVal = todayLog ? todayLog[habit] : false;
-    if (currentVal) return; // Don't allow un-completing
+    if (currentVal) return;
 
     setToggling(habit);
     const ok = await toggleHabit(habit, true);
     if (ok) {
-      // Calculate sats for this completion
       const streakData = calculateStreaks([...dayLogs, { date: getTodayStr(), steps: habit === 'steps' || (todayLog?.steps || false), workout: habit === 'workout' || (todayLog?.workout || false), calories: habit === 'calories' || (todayLog?.calories || false) }]);
       const sats = getSatsForHabit(streakData[habit].current);
       await logSats(getTodayStr(), habit, sats);
 
-      // Refresh
+      // Call payout API (mock for now)
+      fetch('/api/payout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: profile.strikeUsername, sats, reason: `${habit} streak day ${streakData[habit].current}` }),
+      }).catch(() => {});
+
       const [s, t, d] = await Promise.all([getPlayerStats(), getTodayLog(), getDayLogs()]);
       setStats(s); setTodayLog(t); setDayLogs(d);
       setShowReward({ sats, habit });
@@ -59,7 +115,7 @@ export default function SatSlayer() {
   const [wiWeight, setWiWeight] = useState('');
   const [wiSaving, setWiSaving] = useState(false);
   const [wiResult, setWiResult] = useState<{ sats: number; milestones: string[] } | null>(null);
-  const lastWeight = weighIns.length > 0 ? weighIns[weighIns.length - 1].weight : CONFIG.startWeight;
+  const lastWeight = weighIns.length > 0 ? weighIns[weighIns.length - 1].weight : profile.startWeight;
   const alreadyWeighed = weighIns.some((w) => w.weekNumber === weekNumber);
 
   const handleWeighIn = async () => {
@@ -68,23 +124,24 @@ export default function SatSlayer() {
     const result = await saveWeighIn(weekNumber, parseFloat(wiWeight), lastWeight);
     if (result.success) {
       setWiResult({ sats: result.satsEarned, milestones: result.milestonesHit });
+
+      if (result.satsEarned > 0) {
+        fetch('/api/payout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: profile.strikeUsername, sats: result.satsEarned, reason: `Week ${weekNumber} weigh-in` }),
+        }).catch(() => {});
+      }
+
       const [s, w] = await Promise.all([getPlayerStats(), getWeighIns()]);
       setStats(s); setWeighIns(w);
     }
     setWiSaving(false);
   };
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center relative z-10">
-      <div className="text-center">
-        <div className="w-10 h-10 border-2 border-[var(--border)] border-t-[var(--btc)] rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-sm text-[var(--text-muted)]">Loading bounties...</p>
-      </div>
-    </div>
-  );
-
   const streaks = stats?.streaks || [];
   const totalDailyPotential = streaks.reduce((sum, s) => sum + s.satsPerCompletion, 0);
+  const weightPct = stats ? Math.min(((profile.startWeight - stats.currentWeight) / (profile.startWeight - profile.goalWeight)) * 100, 100) : 0;
 
   return (
     <div className="min-h-screen relative z-10 pb-20">
@@ -105,7 +162,7 @@ export default function SatSlayer() {
             <div className="w-8 h-8 rounded-lg bg-[var(--btc)] flex items-center justify-center text-black text-sm font-bold">₿</div>
             <div>
               <div className="text-base display">SATSLAYER</div>
-              <div className="text-[9px] text-[var(--text-muted)] tracking-widest uppercase -mt-0.5">{CONFIG.playerName}&apos;s Bounty</div>
+              <div className="text-[9px] text-[var(--text-muted)] tracking-widest uppercase -mt-0.5">{profile.strikeUsername}&apos;s Bounty</div>
             </div>
           </div>
           <div className="text-right">
@@ -118,11 +175,17 @@ export default function SatSlayer() {
       <main className="max-w-lg mx-auto px-4 py-4">
         {tab === 'today' && (
           <div className="space-y-4 animate-in">
-            {/* Streak overview */}
+            {/* Progress overview */}
             <div className="card p-4">
               <div className="flex items-center justify-between mb-3">
-                <div className="text-[10px] uppercase tracking-widest text-[var(--text-muted)]">Today&apos;s potential</div>
-                <div className="mono text-sm text-[var(--btc)]">{formatSats(totalDailyPotential)} sats</div>
+                <div>
+                  <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest">Today&apos;s potential</div>
+                  <div className="mono text-sm text-[var(--btc)]">{formatSats(totalDailyPotential)} sats</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest">Day {dayNumber}</div>
+                  <div className="mono text-sm text-[var(--text-secondary)]">Week {weekNumber}</div>
+                </div>
               </div>
 
               {/* Three habit cards */}
@@ -145,12 +208,10 @@ export default function SatSlayer() {
                       }}
                     >
                       <div className="flex items-center gap-3">
-                        {/* Check / Icon */}
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 ${completed ? '' : ''}`}
-                          style={{ background: completed ? `${habit.color}20` : `${habit.color}15` }}>
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0"
+                          style={{ background: `${habit.color}15` }}>
                           {completed ? '✅' : habit.icon}
                         </div>
-
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold">{habit.label}</span>
@@ -162,15 +223,12 @@ export default function SatSlayer() {
                           </div>
                           <div className="text-[11px] text-[var(--text-muted)]">{habit.description}</div>
                         </div>
-
                         <div className="text-right shrink-0">
                           <div className="mono text-sm" style={{ color: completed ? 'var(--green)' : 'var(--btc)' }}>
                             {completed ? '✓' : `+${formatSats(streak?.satsPerCompletion || 500)}`}
                           </div>
                           {!completed && nextTier && (
-                            <div className="text-[9px] text-[var(--text-muted)]">
-                              {nextTier.nextMultiplier}× in {nextTier.daysUntil}d
-                            </div>
+                            <div className="text-[9px] text-[var(--text-muted)]">{nextTier.nextMultiplier}× in {nextTier.daysUntil}d</div>
                           )}
                         </div>
                       </div>
@@ -180,18 +238,18 @@ export default function SatSlayer() {
               </div>
             </div>
 
-            {/* Streak danger zone — what you'd lose */}
+            {/* Streak danger */}
             {streaks.some((s) => s.currentStreak >= 4) && (
               <div className="card p-4" style={{ borderColor: 'var(--red)30' }}>
                 <div className="text-[10px] uppercase tracking-widest text-[var(--red)] mb-2">Don&apos;t break the chain</div>
                 <div className="space-y-1.5">
                   {streaks.filter((s) => s.currentStreak >= 4).map((s) => {
                     const habitInfo = HABITS.find((h) => h.type === s.type)!;
-                    const lossPerDay = s.satsPerCompletion - CONFIG.baseSatsPerHabit;
+                    const loss = s.satsPerCompletion - CONFIG.baseSatsPerHabit;
                     return (
                       <div key={s.type} className="flex items-center justify-between text-xs">
-                        <span className="text-[var(--text-secondary)]">{habitInfo.icon} {habitInfo.label} streak: {s.currentStreak} days</span>
-                        <span className="mono text-[var(--red)]">−{formatSats(lossPerDay)}/day if broken</span>
+                        <span className="text-[var(--text-secondary)]">{habitInfo.icon} {habitInfo.label}: {s.currentStreak} days</span>
+                        <span className="mono text-[var(--red)]">−{formatSats(loss)}/day if broken</span>
                       </div>
                     );
                   })}
@@ -199,11 +257,11 @@ export default function SatSlayer() {
               </div>
             )}
 
-            {/* Quick stats row */}
+            {/* Quick stats */}
             <div className="grid grid-cols-3 gap-2">
               <div className="card p-3 text-center">
                 <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Weight</div>
-                <div className="mono text-lg">{stats?.currentWeight || '—'}</div>
+                <div className="mono text-lg">{stats?.currentWeight || profile.startWeight}</div>
                 {stats && stats.totalLost > 0 && <div className="text-[10px] text-[var(--green)]">↓{stats.totalLost}</div>}
               </div>
               <div className="card p-3 text-center">
@@ -223,12 +281,12 @@ export default function SatSlayer() {
               <div className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] mb-3">Streak multiplier tiers</div>
               <div className="space-y-1">
                 {CONFIG.streakTiers.map((tier, i) => {
-                  const nextTier = CONFIG.streakTiers[i + 1];
-                  const range = nextTier ? `${tier.minDays}-${nextTier.minDays - 1}` : `${tier.minDays}+`;
-                  const maxStreak = Math.max(...streaks.map((s) => s.currentStreak));
-                  const isActive = maxStreak >= tier.minDays && (!nextTier || maxStreak < nextTier.minDays);
+                  const next = CONFIG.streakTiers[i + 1];
+                  const range = next ? `${tier.minDays}-${next.minDays - 1}` : `${tier.minDays}+`;
+                  const maxStreak = Math.max(...streaks.map((s) => s.currentStreak), 0);
+                  const isActive = maxStreak >= tier.minDays && (!next || maxStreak < next.minDays);
                   return (
-                    <div key={tier.minDays} className={`flex items-center justify-between py-1.5 px-2.5 rounded-lg text-xs ${isActive ? '' : ''}`}
+                    <div key={tier.minDays} className={`flex items-center justify-between py-1.5 px-2.5 rounded-lg text-xs`}
                       style={isActive ? { background: 'var(--btc)10', border: '1px solid var(--btc)30' } : {}}>
                       <span className={isActive ? 'text-[var(--btc)] font-semibold' : 'text-[var(--text-secondary)]'}>
                         {isActive && '▸ '}Days {range}
@@ -262,10 +320,8 @@ export default function SatSlayer() {
                 <div className="text-3xl mb-3">🎉</div>
                 <div className="display text-xl text-[var(--btc)] mb-1">+{formatSats(wiResult.sats)} SATS</div>
                 <div className="text-xs text-[var(--text-muted)]">≈${satsToUsd(wiResult.sats)}</div>
-                {wiResult.milestones.length > 0 && wiResult.milestones.map((m) => (
-                  <div key={m} className="mt-3 bg-[var(--btc)] text-black rounded-xl px-4 py-2 text-sm font-bold display">
-                    🏆 {m}
-                  </div>
+                {wiResult.milestones.map((m) => (
+                  <div key={m} className="mt-3 bg-[var(--btc)] text-black rounded-xl px-4 py-2 text-sm font-bold display">🏆 {m}</div>
                 ))}
               </div>
             ) : (
@@ -278,11 +334,11 @@ export default function SatSlayer() {
                     </div>
                     <div className="text-center">
                       <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Lost</div>
-                      <div className="mono text-xl text-[var(--green)]">{Math.round((CONFIG.startWeight - lastWeight) * 10) / 10}</div>
+                      <div className="mono text-xl text-[var(--green)]">{Math.round((profile.startWeight - lastWeight) * 10) / 10}</div>
                     </div>
                     <div className="text-right">
                       <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">Goal</div>
-                      <div className="mono text-xl">{CONFIG.goalWeight}</div>
+                      <div className="mono text-xl">{profile.goalWeight}</div>
                     </div>
                   </div>
 
@@ -317,29 +373,19 @@ export default function SatSlayer() {
                   <div className="space-y-1.5 text-xs text-[var(--text-secondary)]">
                     <div className="flex justify-between"><span>Log weight</span><span className="mono text-[var(--btc)]">+{formatSats(CONFIG.weighInBase)}</span></div>
                     <div className="flex justify-between"><span>Per pound lost</span><span className="mono text-[var(--btc)]">+{formatSats(CONFIG.weighInPerPound)}</span></div>
-                    <div className="flex justify-between"><span>Max weekly</span><span className="mono">{formatSats(CONFIG.weighInMaxPayout)}</span></div>
                     <div className="flex justify-between"><span>Gained weight</span><span className="mono text-[var(--red)]">0 sats</span></div>
                   </div>
                 </div>
 
-                {/* Weigh-in history */}
                 {weighIns.length > 0 && (
                   <div>
                     <div className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] mb-2 px-0.5">History</div>
                     <div className="space-y-1.5">
                       {[...weighIns].reverse().map((wi) => (
                         <div key={wi.weekNumber} className="card p-3 flex items-center justify-between">
-                          <div>
-                            <div className="text-xs font-semibold">Week {wi.weekNumber}</div>
-                            <div className="text-[10px] text-[var(--text-muted)]">{wi.date}</div>
-                          </div>
+                          <div><div className="text-xs font-semibold">Week {wi.weekNumber}</div><div className="text-[10px] text-[var(--text-muted)]">{wi.date}</div></div>
                           <div className="flex items-center gap-3">
-                            <div className="text-right">
-                              <div className="mono text-sm">{wi.weight}</div>
-                              <div className="text-[10px]" style={{ color: wi.change <= 0 ? 'var(--green)' : 'var(--red)' }}>
-                                {wi.change <= 0 ? '↓' : '↑'}{Math.abs(wi.change)}
-                              </div>
-                            </div>
+                            <div className="text-right"><div className="mono text-sm">{wi.weight}</div><div className="text-[10px]" style={{ color: wi.change <= 0 ? 'var(--green)' : 'var(--red)' }}>{wi.change <= 0 ? '↓' : '↑'}{Math.abs(wi.change)}</div></div>
                             <div className="mono text-sm text-[var(--btc)]">+{formatSats(wi.satsEarned)}</div>
                           </div>
                         </div>
@@ -354,27 +400,27 @@ export default function SatSlayer() {
 
         {tab === 'stats' && stats && (
           <div className="space-y-4 animate-in">
-            {/* Total earned */}
             <div className="card p-5 text-center">
               <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-1">Total earned</div>
               <div className="mono text-4xl text-[var(--btc)]">{formatSats(stats.totalSatsEarned)}</div>
               <div className="text-sm text-[var(--text-muted)] mt-1">≈${satsToUsd(stats.totalSatsEarned)}</div>
             </div>
 
-            {/* Weight */}
             <div className="card p-5">
               <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-3 text-center">Weight journey</div>
               <div className="flex items-baseline justify-center gap-4">
-                <div className="text-center"><div className="text-[10px] text-[var(--text-muted)]">Start</div><div className="mono text-lg">{CONFIG.startWeight}</div></div>
+                <div className="text-center"><div className="text-[10px] text-[var(--text-muted)]">Start</div><div className="mono text-lg">{profile.startWeight}</div></div>
                 <div className="text-xl text-[var(--text-muted)]">→</div>
                 <div className="text-center"><div className="text-[10px] text-[var(--green)]">Now</div><div className="mono text-2xl text-[var(--green)]">{stats.currentWeight}</div></div>
                 <div className="text-xl text-[var(--text-muted)]">→</div>
-                <div className="text-center"><div className="text-[10px] text-[var(--text-muted)]">Goal</div><div className="mono text-lg">{CONFIG.goalWeight}</div></div>
+                <div className="text-center"><div className="text-[10px] text-[var(--text-muted)]">Goal</div><div className="mono text-lg">{profile.goalWeight}</div></div>
               </div>
-              <div className="mono text-xs text-center text-[var(--text-muted)] mt-2">{stats.totalLost} lbs lost</div>
+              <div className="h-2 bg-[var(--bg)] rounded-full overflow-hidden mt-3">
+                <div className="h-full rounded-full" style={{ width: `${Math.max(weightPct, 0)}%`, background: 'linear-gradient(90deg, var(--green-dim), var(--green))' }} />
+              </div>
+              <div className="mono text-xs text-center text-[var(--text-muted)] mt-1.5">{stats.totalLost} lbs lost</div>
             </div>
 
-            {/* Streaks detail */}
             <div className="card p-4">
               <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-3">Streak details</div>
               <div className="space-y-3">
@@ -386,9 +432,7 @@ export default function SatSlayer() {
                       <div className="flex-1">
                         <div className="text-xs font-semibold">{habit.label}</div>
                         <div className="flex items-center gap-2 mt-0.5">
-                          <span className="mono text-[10px] px-1.5 py-0.5 rounded" style={{ background: `${habit.color}15`, color: habit.color }}>
-                            {s.currentStreak}d streak
-                          </span>
+                          <span className="mono text-[10px] px-1.5 py-0.5 rounded" style={{ background: `${habit.color}15`, color: habit.color }}>{s.currentStreak}d</span>
                           <span className="mono text-[10px] text-[var(--btc)]">{s.multiplier}×</span>
                           <span className="text-[10px] text-[var(--text-muted)]">Best: {s.longestStreak}d</span>
                         </div>
@@ -400,7 +444,6 @@ export default function SatSlayer() {
               </div>
             </div>
 
-            {/* Milestones */}
             <div className="card p-4">
               <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-3">Milestones</div>
               <div className="space-y-1.5">
@@ -408,10 +451,7 @@ export default function SatSlayer() {
                   const hit = stats.milestonesHit.includes(m.label);
                   return (
                     <div key={m.label} className={`flex items-center justify-between py-2 px-3 rounded-lg ${hit ? 'opacity-40' : ''}`} style={{ background: 'var(--bg)' }}>
-                      <div className="flex items-center gap-2">
-                        <span>{hit ? '✅' : '🎯'}</span>
-                        <div><div className="text-xs font-semibold">{m.label}</div><div className="text-[10px] text-[var(--text-muted)]">{m.weight} lbs</div></div>
-                      </div>
+                      <div className="flex items-center gap-2"><span>{hit ? '✅' : '🎯'}</span><div><div className="text-xs font-semibold">{m.label}</div><div className="text-[10px] text-[var(--text-muted)]">{m.weight} lbs</div></div></div>
                       <div className="mono text-sm" style={{ color: hit ? 'var(--green)' : 'var(--btc)' }}>{hit ? 'CLAIMED' : `+${formatSats(m.sats)}`}</div>
                     </div>
                   );
@@ -419,7 +459,6 @@ export default function SatSlayer() {
               </div>
             </div>
 
-            {/* Grid stats */}
             <div className="grid grid-cols-2 gap-2">
               <div className="card p-3.5 text-center"><div className="text-[10px] text-[var(--text-muted)] uppercase">Days logged</div><div className="mono text-xl mt-1">{stats.totalDaysLogged}</div></div>
               <div className="card p-3.5 text-center"><div className="text-[10px] text-[var(--text-muted)] uppercase">Weigh-ins</div><div className="mono text-xl mt-1">{stats.weighInsLogged}<span className="text-sm text-[var(--text-muted)]">/52</span></div></div>
