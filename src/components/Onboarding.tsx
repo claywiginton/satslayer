@@ -21,6 +21,10 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
   const [adminPin, setAdminPin] = useState('');
   const [resetting, setResetting] = useState(false);
   const [resetError, setResetError] = useState('');
+  const [tgChecking, setTgChecking] = useState(false);
+  const [tgConnected, setTgConnected] = useState(false);
+  const [tgName, setTgName] = useState('');
+  const [tgError, setTgError] = useState('');
 
   const handleReset = async () => {
     if (!adminPin) return;
@@ -244,11 +248,6 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
 
   // ── STEP 2: CONNECT TELEGRAM ──
   if (step === 2) {
-    const [tgChecking, setTgChecking] = useState(false);
-    const [tgConnected, setTgConnected] = useState(false);
-    const [tgName, setTgName] = useState('');
-    const [tgError, setTgError] = useState('');
-
     const checkTelegram = async () => {
       setTgChecking(true);
       setTgError('');
