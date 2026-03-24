@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   CONFIG, HABITS, formatSats, satsToUsd, getMultiplier, getSatsForHabit, getNextTier,
   getDayNumber, getWeekNumber, getTodayStr, calculateWeighInReward,
@@ -31,6 +31,7 @@ export default function SatSlayer() {
   const [wiResult, setWiResult] = useState<{ sats: number; milestones: string[] } | null>(null);
   const [habitInputs, setHabitInputs] = useState<Record<HabitType, string>>({ steps: '', workout: '', calories: '' });
   const [weightUnit, setWeightUnit] = useState<WeightUnit>(CONFIG.defaultUnit);
+  const [showTiers, setShowTiers] = useState(false);
 
   const dw = (kg: number) => `${Math.round((weightUnit === 'lbs' ? kgToLbs(kg) : kg) * 10) / 10}`;
   const wu = weightUnit;
@@ -50,9 +51,7 @@ export default function SatSlayer() {
   }, [profile]);
 
   const handleOnboardingComplete = async (username: string, startWeight: number, telegramChatId?: string) => {
-    console.log('handleOnboardingComplete called:', username, startWeight, telegramChatId);
     const saved = await savePlayerProfile(username, startWeight, CONFIG.goalWeight, telegramChatId);
-    console.log('Profile save result:', saved);
     if (saved) {
       setProfile({ strikeUsername: username, startWeight, goalWeight: CONFIG.goalWeight, startDate: getTodayStr(), createdAt: new Date().toISOString() });
     } else {
@@ -60,22 +59,9 @@ export default function SatSlayer() {
     }
   };
 
-  if (!profileChecked) return (
-    <div className="min-h-screen flex items-center justify-center relative z-10">
-      <div className="w-8 h-8 border-2 border-[var(--border)] border-t-[var(--btc)] rounded-full animate-spin" />
-    </div>
-  );
-
+  if (!profileChecked) return <div className="min-h-screen flex items-center justify-center relative z-10"><div className="w-8 h-8 border-2 border-[var(--border)] border-t-[var(--btc)] rounded-full animate-spin" /></div>;
   if (!profile) return <Onboarding onComplete={handleOnboardingComplete} claimed={profileExists} onReset={() => { setProfile(null); setProfileExists(false); }} />;
-
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center relative z-10">
-      <div className="text-center">
-        <div className="w-8 h-8 border-2 border-[var(--border)] border-t-[var(--btc)] rounded-full animate-spin mx-auto mb-3" />
-        <p className="text-xs text-[var(--text-muted)]">Loading...</p>
-      </div>
-    </div>
-  );
+  if (loading) return <div className="min-h-screen flex items-center justify-center relative z-10"><div className="text-center"><div className="w-8 h-8 border-2 border-[var(--border)] border-t-[var(--btc)] rounded-full animate-spin mx-auto mb-3" /><p className="text-xs text-[var(--text-muted)]">Loading...</p></div></div>;
 
   const dayNumber = getDayNumber();
   const weekNumber = getWeekNumber();
@@ -84,6 +70,8 @@ export default function SatSlayer() {
   const streaks = stats?.streaks || [];
   const totalDailyPotential = streaks.reduce((sum, s) => sum + s.satsPerCompletion, 0);
   const weightPct = stats ? Math.min(((profile.startWeight - stats.currentWeight) / (profile.startWeight - profile.goalWeight)) * 100, 100) : 0;
+  const todayComplete = HABITS.every(h => todayLog ? habitMet(h.type, todayLog[h.type]) : false);
+  const todayCount = HABITS.filter(h => todayLog ? habitMet(h.type, todayLog[h.type]) : false).length;
 
   const handleSubmitHabit = async (habit: HabitType) => {
     if (toggling) return;
@@ -105,14 +93,9 @@ export default function SatSlayer() {
       setShowReward({ sats, habit });
       setTimeout(() => setShowReward(null), 2500);
       setHabitInputs(prev => ({ ...prev, [habit]: '' }));
-
-      // Check if all 3 habits are now complete — send Telegram congrats
       if (t) {
         const allDone = HABITS.every(h => habitMet(h.type, t[h.type]));
-        if (allDone) {
-          const todaySats = s?.totalSatsEarned || 0;
-          fetch('/api/telegram', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'all_complete', data: { totalSats: sats } }) }).catch(() => {});
-        }
+        if (allDone) fetch('/api/telegram', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'all_complete', data: { totalSats: sats } }) }).catch(() => {});
       }
     }
     setToggling(null);
@@ -132,67 +115,70 @@ export default function SatSlayer() {
     setWiSaving(false);
   };
 
-  const todayComplete = HABITS.every(h => todayLog ? habitMet(h.type, todayLog[h.type]) : false);
-  const todayCount = HABITS.filter(h => todayLog ? habitMet(h.type, todayLog[h.type]) : false).length;
-
   return (
     <div className="min-h-screen relative z-10 pb-24">
       {/* Sat reward popup */}
       {showReward && (
         <div className="fixed top-16 left-1/2 -translate-x-1/2 z-[60] sat-pop">
-          <div className="px-8 py-4 rounded-2xl text-center" style={{ background: 'linear-gradient(135deg, var(--btc), #e8820e)', boxShadow: '0 8px 32px rgba(247,147,26,0.3)' }}>
+          <div className="px-8 py-4 rounded-2xl text-center" style={{ background: 'linear-gradient(135deg, var(--btc), #e8820e)', boxShadow: '0 8px 32px rgba(247,147,26,0.35)' }}>
             <div className="text-2xl font-bold display text-black">+{formatSats(showReward.sats)}</div>
-            <div className="text-xs text-black/60">{showReward.habit}</div>
+            <div className="text-xs text-black/50 font-medium">{showReward.habit}</div>
           </div>
         </div>
       )}
 
-      {/* ── HEADER ── */}
+      {/* Header */}
       <header className="sticky top-0 z-50 bg-[var(--bg)]/80 backdrop-blur-xl border-b border-[var(--border)]">
-        <div className="max-w-lg mx-auto px-5 py-3.5 flex items-center justify-between">
+        <div className="max-w-lg mx-auto px-5 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold" style={{ background: 'linear-gradient(135deg, var(--btc), #e8820e)', color: '#000' }}>₿</div>
-            <div>
-              <div className="text-[15px] display tracking-wider">SATSLAYER</div>
-            </div>
+            <div className="display text-[15px] tracking-wider">SATSLAYER</div>
           </div>
           <div className="flex items-center gap-3">
             <div className="text-right">
-              <div className="mono text-sm text-[var(--btc)]">{formatSats(stats?.totalSatsEarned || 0)}</div>
-              <div className="text-[9px] text-[var(--text-muted)] mono">sats earned</div>
+              <div className="mono text-[14px] font-semibold text-[var(--btc)]">{formatSats(stats?.totalSatsEarned || 0)}</div>
+              <div className="text-[9px] text-[var(--text-muted)]">sats earned</div>
             </div>
             <button onClick={() => setWeightUnit(wu === 'kg' ? 'lbs' : 'kg')}
-              className="text-[10px] mono px-2 py-1 rounded-md border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-hover)] active:scale-95 transition-all">
+              className="text-[10px] mono px-2 py-1 rounded-md border border-[var(--border)] text-[var(--text-muted)] active:scale-95 transition-all">
               {wu.toUpperCase()}
             </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-5 pt-5">
+      <main className="max-w-lg mx-auto px-5 pt-4">
 
-        {/* ── TODAY TAB ── */}
+        {/* ═══ TODAY TAB ═══ */}
         {tab === 'today' && (
           <div className="animate-in">
-            {/* Hero stat */}
-            <div className="mb-5">
-              <div className="flex items-baseline justify-between mb-1">
-                <div>
-                  <span className="text-[10px] text-[var(--text-muted)] font-semibold tracking-widest uppercase">Day {dayNumber}</span>
-                  <span className="text-[10px] text-[var(--text-muted)] mx-2">·</span>
-                  <span className="text-[10px] text-[var(--text-muted)] font-semibold tracking-widest uppercase">Week {weekNumber}</span>
-                </div>
-                <span className="text-[10px] text-[var(--text-muted)] font-semibold tracking-widest uppercase">{todayCount}/3 done</span>
+            {/* Day header + completion ring */}
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <div className="display text-[20px]">Day {dayNumber}</div>
+                <div className="text-[11px] text-[var(--text-muted)] mt-0.5">Week {weekNumber} · {todayCount}/3 complete</div>
               </div>
-              {todayComplete && (
-                <div className="mt-2 mb-3 py-2.5 px-4 rounded-xl text-center text-sm font-semibold" style={{ background: 'var(--green-soft)', color: 'var(--green)', border: '1px solid rgba(52,211,153,0.15)' }}>
-                  All habits complete today ✓
+              {/* Mini completion ring */}
+              <div className="relative w-14 h-14">
+                <svg className="w-14 h-14 -rotate-90" viewBox="0 0 56 56">
+                  <circle cx="28" cy="28" r="24" fill="none" stroke="var(--border)" strokeWidth="3" />
+                  <circle cx="28" cy="28" r="24" fill="none" stroke={todayComplete ? 'var(--green)' : 'var(--btc)'} strokeWidth="3"
+                    strokeDasharray={`${(todayCount / 3) * 150.8} 150.8`} strokeLinecap="round" className="transition-all duration-700" />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="mono text-[13px] font-bold" style={{ color: todayComplete ? 'var(--green)' : 'var(--btc)' }}>{todayCount}/3</span>
                 </div>
-              )}
+              </div>
             </div>
 
-            {/* Habit cards */}
-            <div className="space-y-3 mb-5">
+            {todayComplete && (
+              <div className="mb-5 py-3 px-4 rounded-2xl text-center" style={{ background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.15)' }}>
+                <div className="text-[13px] font-semibold" style={{ color: 'var(--green)' }}>✨ All habits complete — you earned {formatSats(totalDailyPotential)} sats today</div>
+              </div>
+            )}
+
+            {/* Habit cards — each is its own big card */}
+            <div className="space-y-3 mb-6">
               {HABITS.map((habit) => {
                 const streak = streaks.find((s) => s.type === habit.type);
                 const todayVal = todayLog ? todayLog[habit.type] : 0;
@@ -206,147 +192,172 @@ export default function SatSlayer() {
                 if (isWeekly) {
                   const now = new Date(); const dow = now.getDay(); const mOff = dow === 0 ? -6 : 1 - dow;
                   const mon = new Date(now); mon.setDate(now.getDate() + mOff);
-                  const monStr = mon.toISOString().split('T')[0];
-                  weeklyCount = dayLogs.filter(d => d.date >= monStr && habitMet(habit.type, d[habit.type])).length;
+                  weeklyCount = dayLogs.filter(d => d.date >= mon.toISOString().split('T')[0] && habitMet(habit.type, d[habit.type])).length;
                 }
-                const streakLabel = isWeekly
-                  ? (streak && streak.currentStreak > 0 ? `${Math.floor(streak.currentStreak / 7)}w` : '')
-                  : (streak && streak.currentStreak > 0 ? `${streak.currentStreak}d` : '');
 
                 return (
-                  <div key={habit.type} className={`card p-4 ${completed ? 'opacity-50' : ''}`}
-                    style={!completed ? { borderColor: `${habit.color}20` } : {}}>
-                    <div className="flex items-center gap-3.5">
-                      <div className="w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0" style={{ background: `${habit.color}12` }}>
-                        {completed ? <span className="text-lg">✅</span> : habit.icon}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-[14px] font-semibold">{habit.label}</span>
-                          {streakLabel && (
-                            <span className="text-[9px] mono font-semibold px-1.5 py-0.5 rounded-md" style={{ background: `${habit.color}15`, color: habit.color }}>
-                              {streakLabel} · {streak?.multiplier}×
-                            </span>
-                          )}
-                          {isWeekly && (
-                            <span className="text-[9px] mono px-1.5 py-0.5 rounded-md" style={{ background: weeklyCount >= (habit.weeklyTarget || 5) ? 'var(--green-soft)' : 'var(--bg-elevated)', color: weeklyCount >= (habit.weeklyTarget || 5) ? 'var(--green)' : 'var(--text-muted)' }}>
-                              {weeklyCount}/{habit.weeklyTarget}
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-[12px] text-[var(--text-muted)]">{habit.description}</div>
-                      </div>
-                      <div className="text-right shrink-0 pl-2">
-                        {completed ? (
-                          <div className="text-[11px] mono text-[var(--text-muted)]">
-                            {habit.type === 'steps' ? `${todayVal.toLocaleString()}` : habit.type === 'calories' ? `${todayVal.toLocaleString()} cal` : 'Done'}
-                          </div>
-                        ) : (
+                  <div key={habit.type} className="card overflow-hidden">
+                    {/* Color accent bar */}
+                    <div className="h-[3px]" style={{ background: completed ? 'var(--green)' : habit.color, opacity: completed ? 0.5 : 1 }} />
+
+                    <div className={`p-5 ${completed ? 'opacity-60' : ''}`}>
+                      {/* Header row */}
+                      <div className="flex items-start justify-between mb-1">
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">{completed ? '✅' : habit.icon}</span>
                           <div>
-                            <div className="mono text-[13px] font-semibold text-[var(--btc)]">+{formatSats(streak?.satsPerCompletion || 500)}</div>
-                            {nextTier && <div className="text-[9px] text-[var(--text-muted)] mono">{nextTier.nextMultiplier}× in {nextTier.daysUntil}d</div>}
+                            <div className="text-[15px] font-semibold">{habit.label}</div>
+                            <div className="text-[11px] text-[var(--text-muted)]">{habit.description}</div>
                           </div>
+                        </div>
+                      </div>
+
+                      {/* Streak + reward info */}
+                      <div className="flex items-center gap-2 mt-2.5 mb-1">
+                        {streak && streak.currentStreak > 0 && (
+                          <span className="text-[10px] mono font-semibold px-2 py-1 rounded-lg" style={{ background: `${habit.color}12`, color: habit.color }}>
+                            🔥 {isWeekly ? `${Math.floor(streak.currentStreak / 7)}w` : `${streak.currentStreak}d`} streak · {streak.multiplier}×
+                          </span>
+                        )}
+                        {isWeekly && (
+                          <span className="text-[10px] mono px-2 py-1 rounded-lg" style={{ background: weeklyCount >= (habit.weeklyTarget || 5) ? 'var(--green-soft)' : 'var(--bg-elevated)', color: weeklyCount >= (habit.weeklyTarget || 5) ? 'var(--green)' : 'var(--text-muted)' }}>
+                            {weeklyCount}/{habit.weeklyTarget} this week
+                          </span>
+                        )}
+                        {!completed && (
+                          <span className="text-[10px] mono font-semibold text-[var(--btc)] ml-auto">+{formatSats(streak?.satsPerCompletion || 500)} sats</span>
                         )}
                       </div>
-                    </div>
 
-                    {/* Input row */}
-                    {!completed && (
-                      <div className="mt-3.5 flex items-center gap-2.5">
-                        {habit.inputType === 'number' ? (
-                          <>
-                            <input type="number" inputMode="numeric"
-                              placeholder={habit.type === 'steps' ? '10000' : '1800'}
+                      {/* Completed state */}
+                      {completed && (
+                        <div className="mt-3 py-2.5 px-4 rounded-xl text-center" style={{ background: 'rgba(52,211,153,0.06)' }}>
+                          <span className="mono text-[13px] text-[var(--green)]">
+                            {habit.type === 'steps' ? `${todayVal.toLocaleString()} steps logged` : habit.type === 'calories' ? `${todayVal.toLocaleString()} cal logged` : 'Workout complete'}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Input area — big, prominent, mobile-friendly */}
+                      {!completed && habit.inputType === 'number' && (
+                        <div className="mt-4">
+                          <div className="relative">
+                            <input
+                              type="number"
+                              inputMode="numeric"
+                              placeholder={habit.type === 'steps' ? '10,000' : '2,200'}
                               value={inputVal}
                               onChange={(e) => setHabitInputs(prev => ({ ...prev, [habit.type]: e.target.value }))}
-                              className="flex-1 bg-[var(--bg)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-[14px] mono text-center focus:outline-none focus:border-[var(--btc)] transition-colors" />
-                            <span className="text-[11px] text-[var(--text-muted)] w-8">{habit.unit}</span>
-                            <button onClick={() => handleSubmitHabit(habit.type)} disabled={!meetsThreshold || isToggling}
-                              className={`px-5 py-2.5 rounded-xl text-[13px] font-bold display tracking-wider transition-all active:scale-95 ${meetsThreshold ? 'text-black' : 'text-[var(--text-muted)] border border-[var(--border)]'}`}
-                              style={meetsThreshold ? { background: 'linear-gradient(135deg, var(--btc), #e8820e)' } : { background: 'var(--bg)' }}>
-                              {isToggling ? '...' : 'LOG'}
-                            </button>
-                          </>
-                        ) : (
-                          <button onClick={() => handleSubmitHabit(habit.type)} disabled={isToggling}
-                            className="w-full py-3 rounded-xl text-[13px] font-bold display tracking-wider text-black active:scale-[0.98] transition-all disabled:opacity-40"
-                            style={{ background: 'linear-gradient(135deg, var(--btc), #e8820e)' }}>
-                            {isToggling ? 'LOGGING...' : "YES — I WORKED OUT"}
-                          </button>
-                        )}
-                      </div>
-                    )}
+                              className="w-full bg-[var(--bg)] border-2 border-[var(--border)] rounded-2xl px-5 py-4 text-[20px] mono text-center font-semibold focus:outline-none focus:border-[var(--btc)] transition-colors"
+                              style={meetsThreshold ? { borderColor: `${habit.color}60` } : {}}
+                            />
+                            <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[12px] text-[var(--text-muted)]">{habit.unit}</span>
+                          </div>
 
-                    {!completed && habit.inputType === 'number' && inputVal && !meetsThreshold && (
-                      <div className="mt-2 text-[10px] text-[var(--red)] pl-[58px]">
-                        {habit.thresholdDir === 'gte' ? `Need at least ${habit.threshold.toLocaleString()} ${habit.unit}` : `Must be under ${habit.threshold.toLocaleString()} ${habit.unit}`}
-                      </div>
-                    )}
+                          {inputVal && !meetsThreshold && (
+                            <div className="mt-2 text-[11px] text-[var(--red)] text-center">
+                              {habit.thresholdDir === 'gte' ? `Need at least ${habit.threshold.toLocaleString()}` : `Must be under ${habit.threshold.toLocaleString()}`}
+                            </div>
+                          )}
+
+                          <button
+                            onClick={() => handleSubmitHabit(habit.type)}
+                            disabled={!meetsThreshold || isToggling}
+                            className="w-full mt-3 py-3.5 rounded-2xl text-[14px] font-bold display tracking-wider transition-all active:scale-[0.98] disabled:opacity-25"
+                            style={meetsThreshold ? { background: `linear-gradient(135deg, ${habit.color}, ${habit.color}dd)`, color: '#000' } : { background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}>
+                            {isToggling ? 'LOGGING...' : meetsThreshold ? `LOG ${habit.label.toUpperCase()}` : `ENTER ${habit.unit.toUpperCase()}`}
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Workout — big tap button */}
+                      {!completed && habit.inputType === 'boolean' && (
+                        <button
+                          onClick={() => handleSubmitHabit(habit.type)}
+                          disabled={isToggling}
+                          className="w-full mt-4 py-4 rounded-2xl text-[15px] font-bold display tracking-wider text-black active:scale-[0.98] transition-all disabled:opacity-40"
+                          style={{ background: `linear-gradient(135deg, ${habit.color}, ${habit.color}cc)` }}>
+                          {isToggling ? 'LOGGING...' : "YES — I WORKED OUT 💪"}
+                        </button>
+                      )}
+
+                      {/* Next tier hint */}
+                      {!completed && nextTier && (
+                        <div className="mt-2 text-center text-[10px] text-[var(--text-muted)]">
+                          {nextTier.daysUntil === 1 ? 'Tomorrow' : `${nextTier.daysUntil} days`} until {nextTier.nextMultiplier}× multiplier
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })}
             </div>
 
             {/* Streak danger zone */}
-            {streaks.some((s) => s.currentStreak >= 4) && (
-              <div className="card p-4 mb-5" style={{ borderColor: 'var(--red-soft)' }}>
-                <div className="text-[10px] uppercase tracking-widest text-[var(--red)] font-semibold mb-2.5">Don&apos;t break the chain</div>
+            {streaks.some((s) => s.currentStreak >= 4) && !todayComplete && (
+              <div className="card p-4 mb-5" style={{ borderColor: 'rgba(248,113,113,0.15)' }}>
+                <div className="text-[10px] uppercase tracking-widest text-[var(--red)] font-semibold mb-2">⚠️ Don&apos;t break the chain</div>
                 {streaks.filter((s) => s.currentStreak >= 4).map((s) => {
                   const h = HABITS.find((h) => h.type === s.type)!;
                   return (
                     <div key={s.type} className="flex items-center justify-between text-[12px] py-1">
                       <span className="text-[var(--text-secondary)]">{h.icon} {h.label}: {h.streakMode === 'weekly' ? `${Math.floor(s.currentStreak / 7)}w` : `${s.currentStreak}d`}</span>
-                      <span className="mono text-[var(--red)] text-[11px]">−{formatSats(s.satsPerCompletion - CONFIG.baseSatsPerHabit)}/day if broken</span>
+                      <span className="mono text-[var(--red)] text-[11px]">−{formatSats(s.satsPerCompletion - CONFIG.baseSatsPerHabit)}/day</span>
                     </div>
                   );
                 })}
               </div>
             )}
 
-            {/* Quick stats row */}
+            {/* Quick stats */}
             <div className="grid grid-cols-3 gap-2.5 mb-5">
               {[
-                { label: 'Weight', value: `${dw(stats?.currentWeight || profile.startWeight)}`, sub: stats && stats.totalLost > 0 ? `↓${dw(stats.totalLost)} ${wu}` : wu, subColor: stats && stats.totalLost > 0 ? 'var(--green)' : 'var(--text-muted)' },
-                { label: 'Days', value: `${stats?.totalDaysLogged || 0}`, sub: 'logged', subColor: 'var(--text-muted)' },
-                { label: 'Earned', value: formatSats(stats?.totalSatsEarned || 0), sub: 'sats', subColor: 'var(--btc)' },
+                { label: 'Weight', value: `${dw(stats?.currentWeight || profile.startWeight)}`, sub: stats && stats.totalLost > 0 ? `↓${dw(stats.totalLost)} ${wu}` : wu, color: stats && stats.totalLost > 0 ? 'var(--green)' : 'var(--text-muted)' },
+                { label: 'Days', value: `${stats?.totalDaysLogged || 0}`, sub: 'logged', color: 'var(--text-muted)' },
+                { label: 'Earned', value: formatSats(stats?.totalSatsEarned || 0), sub: 'sats', color: 'var(--btc)' },
               ].map((item) => (
                 <div key={item.label} className="card p-3.5 text-center">
                   <div className="text-[9px] font-semibold tracking-widest uppercase text-[var(--text-muted)] mb-1">{item.label}</div>
-                  <div className="mono text-[17px] font-semibold">{item.value}</div>
-                  <div className="text-[9px] mono mt-0.5" style={{ color: item.subColor }}>{item.sub}</div>
+                  <div className="mono text-[16px] font-semibold">{item.value}</div>
+                  <div className="text-[9px] mono mt-0.5" style={{ color: item.color }}>{item.sub}</div>
                 </div>
               ))}
             </div>
 
-            {/* Multiplier tiers */}
-            <div className="card p-4">
-              <div className="text-[10px] font-semibold tracking-widest uppercase text-[var(--text-muted)] mb-3">Streak multiplier</div>
-              <div className="space-y-0.5">
-                {CONFIG.streakTiers.map((tier, i) => {
-                  const next = CONFIG.streakTiers[i + 1];
-                  const range = next ? `${tier.minDays}–${next.minDays - 1}` : `${tier.minDays}+`;
-                  const maxStreak = Math.max(...streaks.map((s) => s.currentStreak), 0);
-                  const isActive = maxStreak >= tier.minDays && (!next || maxStreak < next.minDays);
-                  return (
-                    <div key={tier.minDays} className="flex items-center justify-between py-1.5 px-3 rounded-lg text-[12px]"
-                      style={isActive ? { background: 'var(--btc-soft)', border: '1px solid var(--btc-medium)' } : {}}>
-                      <span style={{ color: isActive ? 'var(--btc)' : 'var(--text-muted)' }}>{isActive ? '▸ ' : ''}Days {range}</span>
-                      <span className="mono text-[11px]" style={{ color: isActive ? 'var(--btc)' : 'var(--text-muted)' }}>
-                        {tier.multiplier}× · {formatSats(tier.multiplier * CONFIG.baseSatsPerHabit)}/habit
-                      </span>
-                    </div>
-                  );
-                })}
+            {/* Collapsible multiplier tiers */}
+            <button onClick={() => setShowTiers(!showTiers)} className="w-full card p-3.5 flex items-center justify-between">
+              <span className="text-[11px] font-semibold tracking-widest uppercase text-[var(--text-muted)]">Streak multiplier tiers</span>
+              <span className="text-[var(--text-muted)] text-sm">{showTiers ? '▾' : '▸'}</span>
+            </button>
+            {showTiers && (
+              <div className="card mt-1 p-4">
+                <div className="space-y-0.5">
+                  {CONFIG.streakTiers.map((tier, i) => {
+                    const next = CONFIG.streakTiers[i + 1];
+                    const range = next ? `${tier.minDays}–${next.minDays - 1}` : `${tier.minDays}+`;
+                    const maxStreak = Math.max(...streaks.map((s) => s.currentStreak), 0);
+                    const isActive = maxStreak >= tier.minDays && (!next || maxStreak < next.minDays);
+                    return (
+                      <div key={tier.minDays} className="flex items-center justify-between py-1.5 px-3 rounded-lg text-[12px]"
+                        style={isActive ? { background: 'var(--btc-soft)', border: '1px solid var(--btc-medium)' } : {}}>
+                        <span style={{ color: isActive ? 'var(--btc)' : 'var(--text-muted)' }}>{isActive ? '▸ ' : ''}Days {range}</span>
+                        <span className="mono text-[11px]" style={{ color: isActive ? 'var(--btc)' : 'var(--text-muted)' }}>
+                          {tier.multiplier}× · {formatSats(tier.multiplier * CONFIG.baseSatsPerHabit)}/habit
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
-        {/* ── WEIGH-IN TAB ── */}
+        {/* ═══ WEIGH-IN TAB ═══ */}
         {tab === 'weigh-in' && (
           <div className="animate-in">
             <div className="text-center pt-2 mb-6">
-              <div className="text-3xl mb-3">⚖️</div>
+              <div className="text-3xl mb-2">⚖️</div>
               <h2 className="display text-[22px] mb-1">Week {weekNumber} Weigh-in</h2>
               <p className="text-[12px] text-[var(--text-muted)]">Step on the scale, earn sats</p>
             </div>
@@ -368,35 +379,37 @@ export default function SatSlayer() {
             ) : (
               <div className="space-y-4">
                 <div className="card p-5">
+                  {/* Weight overview */}
                   <div className="grid grid-cols-3 gap-4 mb-5">
                     <div className="text-center"><div className="text-[9px] font-semibold tracking-widest uppercase text-[var(--text-muted)] mb-1">Last</div><div className="mono text-[18px]">{dw(lastWeight)}</div></div>
                     <div className="text-center"><div className="text-[9px] font-semibold tracking-widest uppercase text-[var(--green)] mb-1">Lost</div><div className="mono text-[18px] text-[var(--green)]">{dw(Math.max(profile.startWeight - lastWeight, 0))}</div></div>
                     <div className="text-center"><div className="text-[9px] font-semibold tracking-widest uppercase text-[var(--text-muted)] mb-1">Goal</div><div className="mono text-[18px]">{dw(profile.goalWeight)}</div></div>
                   </div>
 
+                  {/* Big weight input */}
                   <div className="text-[10px] font-semibold tracking-widest uppercase text-[var(--text-muted)] mb-2">Today&apos;s weight ({wu})</div>
                   <input type="number" inputMode="decimal" step="0.1" placeholder={dw(lastWeight)} value={wiWeight} onChange={(e) => setWiWeight(e.target.value)}
-                    className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl px-4 py-3.5 text-xl mono text-center focus:outline-none focus:border-[var(--btc)] transition-colors" />
+                    className="w-full bg-[var(--bg)] border-2 border-[var(--border)] rounded-2xl px-5 py-4 text-[24px] mono text-center font-semibold focus:outline-none focus:border-[var(--btc)] transition-colors" />
 
+                  {/* Reward preview */}
                   {wiWeight && (() => {
                     const inputKg = weightUnit === 'lbs' ? lbsToKg(parseFloat(wiWeight)) : parseFloat(wiWeight);
                     const diff = Math.round(Math.abs(lastWeight - inputKg) * 10) / 10;
                     return (
-                      <div className="mt-3 p-3.5 rounded-xl bg-[var(--bg)]">
-                        <div className="text-[9px] font-semibold tracking-widest uppercase text-[var(--text-muted)] mb-1">Reward preview</div>
+                      <div className="mt-3 p-4 rounded-2xl bg-[var(--bg)]">
                         {inputKg < lastWeight ? (
-                          <div><div className="mono text-[17px] text-[var(--btc)]">+{formatSats(Math.min(CONFIG.weighInBase + Math.round(diff * CONFIG.weighInPerUnit), CONFIG.weighInMaxPayout))}</div><div className="text-[11px] text-[var(--green)]">↓{dw(diff)} {wu}</div></div>
+                          <div className="text-center"><div className="mono text-[20px] text-[var(--btc)]">+{formatSats(Math.min(CONFIG.weighInBase + Math.round(diff * CONFIG.weighInPerUnit), CONFIG.weighInMaxPayout))}</div><div className="text-[11px] text-[var(--green)] mt-1">↓{dw(diff)} {wu} — nice work</div></div>
                         ) : inputKg === lastWeight ? (
-                          <div><div className="mono text-[17px] text-[var(--btc)]">+{formatSats(CONFIG.weighInBase)}</div><div className="text-[11px] text-[var(--text-muted)]">Maintained</div></div>
+                          <div className="text-center"><div className="mono text-[20px] text-[var(--btc)]">+{formatSats(CONFIG.weighInBase)}</div><div className="text-[11px] text-[var(--text-muted)] mt-1">Maintained</div></div>
                         ) : (
-                          <div><div className="mono text-[17px] text-[var(--red)]">0 sats</div><div className="text-[11px] text-[var(--red)]">↑{dw(diff)} {wu} — no reward</div></div>
+                          <div className="text-center"><div className="mono text-[20px] text-[var(--red)]">0 sats</div><div className="text-[11px] text-[var(--red)] mt-1">↑{dw(diff)} {wu} — no reward</div></div>
                         )}
                       </div>
                     );
                   })()}
 
                   <button onClick={handleWeighIn} disabled={!wiWeight || wiSaving}
-                    className="w-full mt-4 py-3.5 rounded-xl text-[13px] font-bold display tracking-wider text-black disabled:opacity-30 active:scale-[0.98] transition-all"
+                    className="w-full mt-4 py-4 rounded-2xl text-[14px] font-bold display tracking-wider text-black disabled:opacity-25 active:scale-[0.98] transition-all"
                     style={{ background: 'linear-gradient(135deg, var(--btc), #e8820e)' }}>
                     {wiSaving ? 'SAVING...' : 'LOG WEIGH-IN'}
                   </button>
@@ -423,17 +436,15 @@ export default function SatSlayer() {
           </div>
         )}
 
-        {/* ── STATS TAB ── */}
+        {/* ═══ STATS TAB ═══ */}
         {tab === 'stats' && stats && (
           <div className="animate-in space-y-4">
-            {/* Total earned hero */}
             <div className="card p-6 text-center">
               <div className="text-[9px] font-semibold tracking-widest uppercase text-[var(--text-muted)] mb-1">Total earned</div>
               <div className="mono text-[36px] font-bold text-[var(--btc)] leading-tight">{formatSats(stats.totalSatsEarned)}</div>
               <div className="text-[13px] text-[var(--text-muted)] mono mt-1">${satsToUsd(stats.totalSatsEarned)}</div>
             </div>
 
-            {/* Weight journey */}
             <div className="card p-5">
               <div className="text-[9px] font-semibold tracking-widest uppercase text-[var(--text-muted)] mb-3 text-center">Weight journey</div>
               <div className="flex items-baseline justify-center gap-5">
@@ -443,14 +454,13 @@ export default function SatSlayer() {
                 <div className="text-[var(--text-muted)]">→</div>
                 <div className="text-center"><div className="text-[9px] text-[var(--text-muted)] font-semibold uppercase">Goal</div><div className="mono text-[17px]">{dw(profile.goalWeight)}</div></div>
               </div>
-              <div className="progress-bar mt-4"><div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.max(weightPct, 0)}%`, background: 'linear-gradient(90deg, var(--green-dim), var(--green))' }} /></div>
+              <div className="h-[5px] bg-[var(--bg)] rounded-full overflow-hidden mt-4"><div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.max(weightPct, 0)}%`, background: 'linear-gradient(90deg, var(--green-dim), var(--green))' }} /></div>
               <div className="mono text-[11px] text-center text-[var(--text-muted)] mt-2">{dw(stats.totalLost)} {wu} lost</div>
             </div>
 
-            {/* Streaks */}
             <div className="card p-5">
               <div className="text-[9px] font-semibold tracking-widest uppercase text-[var(--text-muted)] mb-3">Streaks</div>
-              <div className="space-y-3">
+              <div className="space-y-3.5">
                 {streaks.map((s) => {
                   const h = HABITS.find((hab) => hab.type === s.type)!;
                   return (
@@ -459,8 +469,8 @@ export default function SatSlayer() {
                       <div className="flex-1">
                         <div className="text-[13px] font-semibold">{h.label}</div>
                         <div className="flex items-center gap-2 mt-0.5">
-                          <span className="mono text-[10px] px-1.5 py-0.5 rounded-md font-semibold" style={{ background: `${h.color}12`, color: h.color }}>
-                            {h.streakMode === 'weekly' ? `${Math.floor(s.currentStreak / 7)}w` : `${s.currentStreak}d`}
+                          <span className="mono text-[10px] px-2 py-0.5 rounded-lg font-semibold" style={{ background: `${h.color}12`, color: h.color }}>
+                            🔥 {h.streakMode === 'weekly' ? `${Math.floor(s.currentStreak / 7)}w` : `${s.currentStreak}d`}
                           </span>
                           <span className="mono text-[10px] text-[var(--btc)] font-semibold">{s.multiplier}×</span>
                           <span className="text-[10px] text-[var(--text-muted)]">Best: {h.streakMode === 'weekly' ? `${Math.floor(s.longestStreak / 7)}w` : `${s.longestStreak}d`}</span>
@@ -473,7 +483,6 @@ export default function SatSlayer() {
               </div>
             </div>
 
-            {/* Milestones */}
             <div className="card p-5">
               <div className="text-[9px] font-semibold tracking-widest uppercase text-[var(--text-muted)] mb-3">Milestones</div>
               <div className="space-y-2">
@@ -497,8 +506,8 @@ export default function SatSlayer() {
         )}
       </main>
 
-      {/* ── BOTTOM NAV ── */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[var(--bg)]/90 backdrop-blur-xl border-t border-[var(--border)] safe-bottom">
+      {/* Bottom nav */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[var(--bg)]/90 backdrop-blur-xl border-t border-[var(--border)]" style={{ paddingBottom: 'env(safe-area-inset-bottom, 4px)' }}>
         <div className="max-w-lg mx-auto flex justify-around py-2">
           {([
             { id: 'today' as const, label: 'Today', icon: '⚡' },
