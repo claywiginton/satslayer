@@ -242,13 +242,97 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
     );
   }
 
-  // ── STEP 2: HOW DAILY HABITS WORK ──
+  // ── STEP 2: CONNECT TELEGRAM ──
   if (step === 2) {
+    const [tgChecking, setTgChecking] = useState(false);
+    const [tgConnected, setTgConnected] = useState(false);
+    const [tgName, setTgName] = useState('');
+    const [tgError, setTgError] = useState('');
+
+    const checkTelegram = async () => {
+      setTgChecking(true);
+      setTgError('');
+      try {
+        const res = await fetch('/api/telegram-register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        const data = await res.json();
+        if (data.connected) {
+          setTgConnected(true);
+          setTgName(data.firstName || '');
+        } else {
+          setTgError(data.error || 'Not connected yet. Send /start to the bot and try again.');
+        }
+      } catch {
+        setTgError('Connection check failed. Try again.');
+      }
+      setTgChecking(false);
+    };
+
     return (
       <div className="min-h-screen relative z-10 flex flex-col justify-center px-6">
         <div className="max-w-sm mx-auto w-full">
           <div className="flex gap-1.5 mb-8 justify-center">
-            {[0,1,2,3,4,5].map((i) => <div key={i} className="h-1 rounded-full w-6" style={{ background: i <= 2 ? 'var(--btc)' : 'var(--border)' }} />)}
+            {[0,1,2,3,4,5,6].map((i) => <div key={i} className="h-1 rounded-full w-5" style={{ background: i <= 2 ? 'var(--btc)' : 'var(--border)' }} />)}
+          </div>
+
+          <div className="text-3xl mb-2">📬</div>
+          <h2 className="display text-2xl mb-1">CONNECT TELEGRAM</h2>
+          <p className="text-sm text-[var(--text-muted)] mb-6">
+            Get daily reminders, streak warnings, and milestone alerts.
+          </p>
+
+          <div className="card p-5 mb-4">
+            <div className="text-[10px] font-semibold tracking-widest uppercase text-[var(--text-muted)] mb-3">3 quick steps</div>
+            <div className="space-y-3">
+              <div className="flex gap-3 items-start">
+                <div className="w-6 h-6 rounded-full bg-[var(--btc)] text-black flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">1</div>
+                <div className="text-[13px] text-[var(--text-secondary)]">Open Telegram on your phone</div>
+              </div>
+              <div className="flex gap-3 items-start">
+                <div className="w-6 h-6 rounded-full bg-[var(--btc)] text-black flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">2</div>
+                <div>
+                  <div className="text-[13px] text-[var(--text-secondary)]">Search for the bot and open it:</div>
+                  <div className="mono text-[13px] text-[var(--btc)] mt-1 select-all">@satslayer_bot</div>
+                </div>
+              </div>
+              <div className="flex gap-3 items-start">
+                <div className="w-6 h-6 rounded-full bg-[var(--btc)] text-black flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">3</div>
+                <div className="text-[13px] text-[var(--text-secondary)]">Send <span className="mono text-[var(--text)]">/start</span> to the bot</div>
+              </div>
+            </div>
+          </div>
+
+          {tgConnected ? (
+            <div className="card p-4 mb-4 text-center" style={{ borderColor: 'rgba(52,211,153,0.3)' }}>
+              <div className="text-lg mb-1">✅</div>
+              <div className="text-[13px] font-semibold" style={{ color: 'var(--green)' }}>Connected{tgName ? ` as ${tgName}` : ''}!</div>
+              <div className="text-[11px] text-[var(--text-muted)] mt-1">You&apos;ll get reminders via Telegram</div>
+            </div>
+          ) : (
+            <>
+              <button onClick={checkTelegram} disabled={tgChecking}
+                className="w-full py-3.5 rounded-xl text-[13px] font-bold display tracking-wider bg-[var(--btc)] text-black active:scale-[0.98] transition-all disabled:opacity-50 mb-3">
+                {tgChecking ? 'CHECKING...' : 'I SENT /START — VERIFY'}
+              </button>
+              {tgError && <p className="text-[11px] text-[var(--red)] text-center mb-3">{tgError}</p>}
+            </>
+          )}
+
+          <button onClick={() => setStep(3)}
+            className={`w-full py-4 rounded-2xl text-base font-bold display tracking-wider active:scale-[0.98] transition-all ${tgConnected ? 'bg-[var(--btc)] text-black' : 'border border-[var(--border)] text-[var(--text-muted)]'}`}>
+            {tgConnected ? 'CONTINUE' : 'SKIP FOR NOW'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── STEP 3: HOW DAILY HABITS WORK ──
+  if (step === 3) {
+    return (
+      <div className="min-h-screen relative z-10 flex flex-col justify-center px-6">
+        <div className="max-w-sm mx-auto w-full">
+          <div className="flex gap-1.5 mb-8 justify-center">
+            {[0,1,2,3,4,5,6].map((i) => <div key={i} className="h-1 rounded-full w-5" style={{ background: i <= 3 ? 'var(--btc)' : 'var(--border)' }} />)}
           </div>
 
           <h2 className="display text-2xl mb-2 text-center">3 DAILY HABITS</h2>
@@ -282,7 +366,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
             Each habit earns sats independently. Complete all three every day for maximum earnings.
           </p>
 
-          <button onClick={() => setStep(3)} className="w-full mt-6 py-4 rounded-2xl text-base font-bold display tracking-wider bg-[var(--btc)] text-black active:scale-[0.98] transition-all">
+          <button onClick={() => setStep(4)} className="w-full mt-6 py-4 rounded-2xl text-base font-bold display tracking-wider bg-[var(--btc)] text-black active:scale-[0.98] transition-all">
             NEXT
           </button>
         </div>
@@ -290,13 +374,13 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
     );
   }
 
-  // ── STEP 3: THE STREAK MULTIPLIER ──
-  if (step === 3) {
+  // ── STEP 4: THE STREAK MULTIPLIER ──
+  if (step === 4) {
     return (
       <div className="min-h-screen relative z-10 flex flex-col justify-center px-6">
         <div className="max-w-sm mx-auto w-full">
           <div className="flex gap-1.5 mb-8 justify-center">
-            {[0,1,2,3,4,5].map((i) => <div key={i} className="h-1 rounded-full w-6" style={{ background: i <= 3 ? 'var(--btc)' : 'var(--border)' }} />)}
+            {[0,1,2,3,4,5,6].map((i) => <div key={i} className="h-1 rounded-full w-5" style={{ background: i <= 4 ? 'var(--btc)' : 'var(--border)' }} />)}
           </div>
 
           <h2 className="display text-2xl mb-2 text-center" style={{ color: 'var(--btc)' }}>THE STREAK MULTIPLIER</h2>
@@ -332,7 +416,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
             </p>
           </div>
 
-          <button onClick={() => setStep(4)} className="w-full mt-6 py-4 rounded-2xl text-base font-bold display tracking-wider bg-[var(--btc)] text-black active:scale-[0.98] transition-all">
+          <button onClick={() => setStep(5)} className="w-full mt-6 py-4 rounded-2xl text-base font-bold display tracking-wider bg-[var(--btc)] text-black active:scale-[0.98] transition-all">
             NEXT
           </button>
         </div>
@@ -340,8 +424,8 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
     );
   }
 
-  // ── STEP 4: THE PLAN — SCIENCE & MATH ──
-  if (step === 4) {
+  // ── STEP 5: THE PLAN — SCIENCE & MATH ──
+  if (step === 5) {
     const sw = parseFloat(startWeight) || CONFIG.startWeight;
     const gw = parseFloat(goalWeight) || CONFIG.goalWeight;
     const toLose = Math.round((sw - gw) * 10) / 10;
@@ -352,7 +436,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
       <div className="min-h-screen relative z-10 flex flex-col justify-center px-6">
         <div className="max-w-sm mx-auto w-full">
           <div className="flex gap-1.5 mb-8 justify-center">
-            {[0,1,2,3,4,5].map((i) => <div key={i} className="h-1 rounded-full w-6" style={{ background: i <= 4 ? 'var(--btc)' : 'var(--border)' }} />)}
+            {[0,1,2,3,4,5,6].map((i) => <div key={i} className="h-1 rounded-full w-5" style={{ background: i <= 5 ? 'var(--btc)' : 'var(--border)' }} />)}
           </div>
 
           <h2 className="display text-2xl mb-2 text-center">THE PLAN</h2>
@@ -443,7 +527,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
             </div>
           </div>
 
-          <button onClick={() => setStep(5)} className="w-full mt-6 py-4 rounded-2xl text-base font-bold display tracking-wider bg-[var(--btc)] text-black active:scale-[0.98] transition-all">
+          <button onClick={() => setStep(6)} className="w-full mt-6 py-4 rounded-2xl text-base font-bold display tracking-wider bg-[var(--btc)] text-black active:scale-[0.98] transition-all">
             NEXT
           </button>
         </div>
@@ -451,13 +535,13 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
     );
   }
 
-  // ── STEP 5: WEIGH-INS + MILESTONES + LAUNCH ──
-  if (step === 5) {
+  // ── STEP 6: WEIGH-INS + MILESTONES + LAUNCH ──
+  if (step === 6) {
     return (
       <div className="min-h-screen relative z-10 flex flex-col justify-center px-6">
         <div className="max-w-sm mx-auto w-full">
           <div className="flex gap-1.5 mb-8 justify-center">
-            {[0,1,2,3,4,5].map((i) => <div key={i} className="h-1 rounded-full w-6" style={{ background: 'var(--btc)' }} />)}
+            {[0,1,2,3,4,5,6].map((i) => <div key={i} className="h-1 rounded-full w-5" style={{ background: 'var(--btc)' }} />)}
           </div>
 
           <h2 className="display text-2xl mb-2 text-center">WEEKLY WEIGH-INS</h2>

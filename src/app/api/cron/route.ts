@@ -52,6 +52,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: 'No profile found, skipping' });
     }
 
+    const chatId = profile.telegram_chat_id || process.env.TELEGRAM_CHAT_ID;
+    if (!chatId) {
+      return NextResponse.json({ message: 'No Telegram chat ID, skipping' });
+    }
+
     const messages: string[] = [];
 
     // ── EVENING CHECK (8pm) ──
@@ -135,7 +140,7 @@ export async function GET(req: NextRequest) {
 
     // Send all messages
     for (const msg of messages) {
-      await sendTelegram(msg);
+      await sendTelegram(msg, chatId);
     }
 
     return NextResponse.json({

@@ -2,12 +2,12 @@
 
 const TELEGRAM_API = 'https://api.telegram.org/bot';
 
-export async function sendTelegram(message: string): Promise<boolean> {
+export async function sendTelegram(message: string, chatIdOverride?: string): Promise<boolean> {
   const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
+  const chatId = chatIdOverride || process.env.TELEGRAM_CHAT_ID;
 
   if (!token || !chatId) {
-    console.log('Telegram not configured, skipping:', message);
+    console.log('Telegram not configured, skipping:', message.substring(0, 50));
     return false;
   }
 
