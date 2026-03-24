@@ -49,9 +49,9 @@ export default function SatSlayer() {
       });
   }, [profile]);
 
-  const handleOnboardingComplete = async (username: string, startWeight: number) => {
-    console.log('handleOnboardingComplete called:', username, startWeight);
-    const saved = await savePlayerProfile(username, startWeight, CONFIG.goalWeight);
+  const handleOnboardingComplete = async (username: string, startWeight: number, telegramChatId?: string) => {
+    console.log('handleOnboardingComplete called:', username, startWeight, telegramChatId);
+    const saved = await savePlayerProfile(username, startWeight, CONFIG.goalWeight, telegramChatId);
     console.log('Profile save result:', saved);
     if (saved) {
       setProfile({ strikeUsername: username, startWeight, goalWeight: CONFIG.goalWeight, startDate: getTodayStr(), createdAt: new Date().toISOString() });

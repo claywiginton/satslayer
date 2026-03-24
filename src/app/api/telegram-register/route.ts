@@ -45,20 +45,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ connected: false, error: 'No messages found. Open the bot in Telegram and send /start' });
     }
 
-    // Save chat ID to Supabase
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-
-    // Update player profile with telegram chat ID
-    const { error } = await supabase
-      .from('player_profile')
-      .update({ telegram_chat_id: String(chatId) })
-      .neq('id', 0); // Update all rows (single user app)
-
-    // Also store as env-like in a settings table or just use it from profile
-    // For the cron job, we'll read from player_profile
+    // Return chatId — the client will save it when profile is created
+    // (Profile doesn't exist yet during onboarding)
 
     // Send a welcome message
     await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {

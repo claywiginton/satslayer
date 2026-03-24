@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { CONFIG, formatSats, satsToUsd } from '@/lib/data';
 
 interface Props {
-  onComplete: (username: string, startWeight: number) => Promise<void> | void;
+  onComplete: (username: string, startWeight: number, telegramChatId?: string) => Promise<void> | void;
   claimed?: boolean; // true if someone already onboarded
   onReset?: () => void;
 }
@@ -25,6 +25,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
   const [tgConnected, setTgConnected] = useState(false);
   const [tgName, setTgName] = useState('');
   const [tgError, setTgError] = useState('');
+  const [telegramChatId, setTelegramChatId] = useState('');
 
   const handleReset = async () => {
     if (!adminPin) return;
@@ -79,7 +80,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
     const sw = parseFloat(startWeight) || CONFIG.startWeight;
     console.log('handleFinish called with:', username.trim().toLowerCase(), sw);
     try {
-      await onComplete(username.trim().toLowerCase(), sw);
+      await onComplete(username.trim().toLowerCase(), sw, telegramChatId || undefined);
       console.log('onComplete finished successfully');
     } catch (e: any) {
       console.error('Finish error:', e);
@@ -110,7 +111,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
           <div className="card p-5 mb-8 text-center">
             <div className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] mb-2">Total bounty pool</div>
             <div className="mono text-4xl text-[var(--btc)]">{formatSats(CONFIG.totalSats)}</div>
-            <div className="text-sm text-[var(--text-muted)] mt-1">sats · ≈${satsToUsd(CONFIG.totalSats)}</div>
+            <div className="text-sm text-[var(--text-muted)] mt-1">sats · waiting for you</div>
           </div>
 
           {claimed ? (
@@ -257,6 +258,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
         if (data.connected) {
           setTgConnected(true);
           setTgName(data.firstName || '');
+          setTelegramChatId(String(data.chatId || ''));
         } else {
           setTgError(data.error || 'Not connected yet. Send /start to the bot and try again.');
         }
@@ -550,11 +552,11 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
             <div className="space-y-2 text-sm">
               <div className="flex justify-between text-[var(--text-secondary)]">
                 <span>Log your weight</span>
-                <span className="mono text-[var(--btc)]">+{formatSats(CONFIG.weighInBase)} <span className="text-[10px] text-[var(--text-muted)]">(${satsToUsd(CONFIG.weighInBase)})</span></span>
+                <span className="mono text-[var(--btc)]">+{formatSats(CONFIG.weighInBase)}</span>
               </div>
               <div className="flex justify-between text-[var(--text-secondary)]">
                 <span>Per kg lost</span>
-                <span className="mono text-[var(--btc)]">+{formatSats(CONFIG.weighInPerUnit)} <span className="text-[10px] text-[var(--text-muted)]">(${satsToUsd(CONFIG.weighInPerUnit)})</span></span>
+                <span className="mono text-[var(--btc)]">+{formatSats(CONFIG.weighInPerUnit)}</span>
               </div>
               <div className="flex justify-between text-[var(--text-secondary)]">
                 <span>Gained weight</span>
@@ -572,7 +574,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
                     <span>🏆</span>
                     <span className="text-sm text-[var(--text-secondary)]">{m.label} — {m.weight} kg</span>
                   </div>
-                  <span className="mono text-sm text-[var(--btc)]">+{formatSats(m.sats)} <span className="text-[var(--text-muted)] text-[10px]">(${satsToUsd(m.sats)})</span></span>
+                  <span className="mono text-sm text-[var(--btc)]">+{formatSats(m.sats)}</span>
                 </div>
               ))}
             </div>
@@ -582,7 +584,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
           <div className="text-center mb-4">
             <div className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] mb-2">Your bounty is funded</div>
             <div className="mono text-3xl text-[var(--btc)]">{formatSats(CONFIG.totalSats)} sats</div>
-            <div className="text-sm text-[var(--text-muted)] mt-1">≈${satsToUsd(CONFIG.totalSats)} · waiting for you</div>
+            <div className="text-sm text-[var(--text-muted)] mt-1">waiting for you</div>
           </div>
 
           {saveError && <p className="text-xs text-[var(--red)] text-center mb-3">{saveError}</p>}

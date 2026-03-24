@@ -34,14 +34,16 @@ export async function getPlayerProfile(): Promise<PlayerProfile | null> {
 export async function savePlayerProfile(
   strikeUsername: string,
   startWeight: number,
-  goalWeight: number
+  goalWeight: number,
+  telegramChatId?: string
 ): Promise<boolean> {
-  console.log('savePlayerProfile: inserting', { strikeUsername, startWeight, goalWeight, start_date: getTodayStr() });
+  console.log('savePlayerProfile: inserting', { strikeUsername, startWeight, goalWeight, start_date: getTodayStr(), telegramChatId });
   const { data, error } = await supabase.from('player_profile').insert({
     strike_username: strikeUsername,
     start_weight: startWeight,
     goal_weight: goalWeight,
     start_date: getTodayStr(),
+    telegram_chat_id: telegramChatId || null,
   }).select();
 
   console.log('savePlayerProfile result:', { data, error });
