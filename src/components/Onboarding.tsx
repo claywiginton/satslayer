@@ -291,7 +291,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
                 <div className="w-6 h-6 rounded-full bg-[var(--btc)] text-black flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">2</div>
                 <div>
                   <div className="text-[13px] text-[var(--text-secondary)]">Search for the bot and open it:</div>
-                  <div className="mono text-[13px] text-[var(--btc)] mt-1 select-all">@satslayer_bot</div>
+                  <div className="mono text-[13px] text-[var(--btc)] mt-1 select-all">@SatSlayerBot</div>
                 </div>
               </div>
               <div className="flex gap-3 items-start">
