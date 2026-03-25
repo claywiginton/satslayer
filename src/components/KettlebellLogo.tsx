@@ -1,16 +1,24 @@
 export default function KettlebellLogo({ size = 36 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="-50 -95 100 145" fill="none">
-      {/* Handle */}
-      <path d="M-20,-58 C-20,-82 -14,-90 0,-90 C14,-90 20,-82 20,-58" stroke="#777" strokeWidth="7" strokeLinecap="round" />
-      {/* Body */}
-      <circle cx="0" cy="4" r="42" fill="#555" />
-      <circle cx="-12" cy="-12" r="18" fill="#666" opacity="0.5" />
-      {/* Flat bottom */}
-      <rect x="-28" y="34" width="56" height="7" rx="3" fill="#444" />
-      {/* Bitcoin stamp */}
-      <circle cx="0" cy="0" r="20" fill="none" stroke="#f7931a" strokeWidth="2" />
-      <text textAnchor="middle" dominantBaseline="central" y="0" fontSize="22" fontWeight="700" fill="#f7931a" fontFamily="var(--font-display)">₿</text>
-    </svg>
+    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+      <img
+        src="/kettlebell.png"
+        alt=""
+        width={size}
+        height={size}
+        style={{ objectFit: 'contain', filter: 'brightness(1.3)' }}
+      />
+      {/* Bitcoin stamp overlay */}
+      <div className="absolute inset-0 flex items-center justify-center" style={{ paddingTop: size * 0.18 }}>
+        <span style={{
+          fontSize: size * 0.32,
+          fontWeight: 800,
+          color: '#f7931a',
+          fontFamily: 'var(--font-display)',
+          textShadow: '0 1px 3px rgba(0,0,0,0.6)',
+          lineHeight: 1,
+        }}>₿</span>
+      </div>
+    </div>
   );
 }
