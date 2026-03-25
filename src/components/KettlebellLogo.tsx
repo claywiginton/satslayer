@@ -9,8 +9,6 @@ export default function KettlebellLogo({ size = 36 }: { size?: number }) {
       <ellipse cx="50" cy="72" rx="38" ry="38" fill="#555" />
       {/* Highlight */}
       <ellipse cx="38" cy="60" rx="14" ry="16" fill="#6a6a6a" opacity="0.45" />
-      {/* Flat bottom */}
-      <rect x="24" y="100" width="52" height="6" rx="3" fill="#444" />
       {/* Bitcoin stamp */}
       <circle cx="50" cy="70" r="18" fill="none" stroke="#f7931a" strokeWidth="1.8" />
       <text textAnchor="middle" dominantBaseline="central" x="50" y="70" fontSize="20" fontWeight="700" fill="#f7931a" fontFamily="var(--font-display)">₿</text>
