@@ -457,12 +457,8 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
             </div>
             <div className="h-[1px] bg-[var(--border)] my-3" />
             <div className="flex justify-between text-[12px] text-[var(--text-secondary)]">
-              <span>Goal deadline</span>
-              <span className="mono font-semibold">Dec 31, 2026 ({weeksToGoal} weeks)</span>
-            </div>
-            <div className="flex justify-between text-[12px] text-[var(--text-secondary)] mt-1.5">
-              <span>Challenge duration</span>
-              <span className="mono font-semibold">{CONFIG.totalWeeks} weeks (1 year)</span>
+              <span>Challenge</span>
+              <span className="mono font-semibold">Apr 1 → Dec 31, 2026 ({weeksToGoal} weeks)</span>
             </div>
             <div className="flex justify-between text-[12px] text-[var(--text-secondary)] mt-1.5">
               <span>Required rate</span>

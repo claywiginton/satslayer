@@ -9,7 +9,7 @@ export const CONFIG = {
   defaultUnit: 'kg' as WeightUnit,
   calorieTarget: 2500,
   startDate: '2026-04-01',
-  totalWeeks: 52, // 1 full year
+  totalWeeks: 39, // Apr 1 - Dec 31, 2026
   totalSats: 2_000_000,
 
   // Cheat day rules: 0 cheat days for first 30 days, then 1 every 30 days
