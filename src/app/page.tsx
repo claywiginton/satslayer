@@ -245,7 +245,7 @@ export default function SatSlayer() {
                             <input
                               type="number"
                               inputMode="numeric"
-                              placeholder={habit.type === 'steps' ? '10,000' : '2,200'}
+                              placeholder={habit.type === 'steps' ? '8,000' : '2,200'}
                               value={inputVal}
                               onChange={(e) => setHabitInputs(prev => ({ ...prev, [habit.type]: e.target.value }))}
                               className="w-full bg-[var(--bg)] border-2 border-[var(--border)] rounded-2xl px-5 py-4 text-[20px] mono text-center font-semibold focus:outline-none focus:border-[var(--btc)] transition-colors"

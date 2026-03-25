@@ -5,12 +5,16 @@ export type WeightUnit = 'kg' | 'lbs';
 export const CONFIG = {
   playerName: 'Eddy',
   startWeight: 129,       // kg
-  goalWeight: 95,          // kg
+  goalWeight: 99,          // kg
   defaultUnit: 'kg' as WeightUnit,
   calorieTarget: 2500,
   startDate: '2026-04-01',
-  totalWeeks: 39, // April → December 2026
+  totalWeeks: 52, // 1 full year
   totalSats: 2_000_000,
+
+  // Cheat day rules: 0 cheat days for first 30 days, then 1 every 30 days
+  cheatDayLockoutDays: 30,
+  cheatDayFrequency: 30,
 
   // Base sats per habit (before multiplier)
   baseSatsPerHabit: 500,
@@ -34,9 +38,9 @@ export const CONFIG = {
   // Milestone jackpots (in kg)
   milestones: [
     { weight: 122, label: 'Down 7kg', sats: 25_000 },
-    { weight: 112, label: 'Halfway', sats: 50_000 },
-    { weight: 103, label: 'Under 103', sats: 75_000 },
-    { weight: 95, label: 'GOAL WEIGHT', sats: 150_000 },
+    { weight: 115, label: 'Under 115', sats: 50_000 },
+    { weight: 107, label: 'Under 107', sats: 75_000 },
+    { weight: 99, label: 'GOAL WEIGHT', sats: 150_000 },
   ] as Milestone[],
 };
 
@@ -52,7 +56,7 @@ export type HabitType = 'steps' | 'workout' | 'calories';
 export type StreakMode = 'daily' | 'weekly'; // daily = every day, weekly = X per calendar week
 
 export const HABITS: { type: HabitType; label: string; icon: string; description: string; color: string; inputType: 'number' | 'boolean'; unit: string; threshold: number; thresholdDir: 'gte' | 'lte'; streakMode: StreakMode; weeklyTarget?: number }[] = [
-  { type: 'steps', label: 'Steps', icon: '👟', description: 'Hit 10,000 steps', color: '#22c55e', inputType: 'number', unit: 'steps', threshold: 10000, thresholdDir: 'gte', streakMode: 'daily' },
+  { type: 'steps', label: 'Steps', icon: '👟', description: 'Hit 8,000 steps', color: '#22c55e', inputType: 'number', unit: 'steps', threshold: 8000, thresholdDir: 'gte', streakMode: 'daily' },
   { type: 'workout', label: 'Workout', icon: '💪', description: '30+ min · 5× per week', color: '#f7931a', inputType: 'boolean', unit: '', threshold: 1, thresholdDir: 'gte', streakMode: 'weekly', weeklyTarget: 5 },
   { type: 'calories', label: 'Calories', icon: '🍽', description: `Under ${CONFIG.calorieTarget.toLocaleString()} cal`, color: '#a855f7', inputType: 'number', unit: 'cal', threshold: CONFIG.calorieTarget, thresholdDir: 'lte', streakMode: 'daily' },
 ];
@@ -75,6 +79,30 @@ export function habitMet(type: HabitType, value: number): boolean {
   const habit = HABITS.find((h) => h.type === type)!;
   if (habit.thresholdDir === 'gte') return value >= habit.threshold;
   return value <= habit.threshold && value > 0; // lte but must have logged something
+}
+
+// ── CHEAT DAY LOGIC ──
+
+export function getCheatDayInfo(dayNumber: number, usedCheatDays: number): {
+  available: boolean;
+  totalEarned: number;
+  totalUsed: number;
+  nextCheatDay: number;
+  inLockout: boolean;
+} {
+  const { cheatDayLockoutDays, cheatDayFrequency } = CONFIG;
+
+  if (dayNumber <= cheatDayLockoutDays) {
+    return { available: false, totalEarned: 0, totalUsed: usedCheatDays, nextCheatDay: cheatDayLockoutDays + 1, inLockout: true };
+  }
+
+  // After lockout: 1 cheat day earned every cheatDayFrequency days
+  const daysAfterLockout = dayNumber - cheatDayLockoutDays;
+  const totalEarned = Math.floor(daysAfterLockout / cheatDayFrequency);
+  const available = totalEarned > usedCheatDays;
+  const nextEarnDay = cheatDayLockoutDays + ((totalEarned + 1) * cheatDayFrequency);
+
+  return { available, totalEarned, totalUsed: usedCheatDays, nextCheatDay: nextEarnDay, inLockout: false };
 }
 
 export interface WeighIn {

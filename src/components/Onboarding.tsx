@@ -224,14 +224,10 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
 
             <div>
               <label className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] block mb-2">Goal weight (kg)</label>
-              <input
-                type="number"
-                inputMode="decimal"
-                placeholder="95"
-                value={goalWeight}
-                onChange={(e) => setGoalWeight(e.target.value)}
-                className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-xl px-4 py-3 text-base mono focus:outline-none focus:border-[var(--btc)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              />
+              <div className="w-full bg-[var(--bg-elevated)] border border-[var(--border)] rounded-xl px-4 py-3 text-base mono text-[var(--text-secondary)]">
+                {CONFIG.goalWeight} kg
+                <span className="text-[10px] text-[var(--text-muted)] ml-2">fixed target</span>
+              </div>
             </div>
           </div>
 
@@ -343,7 +339,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
             <div className="card p-4 flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ background: '#22c55e15' }}>👟</div>
               <div>
-                <div className="font-semibold">10,000 Steps</div>
+                <div className="font-semibold">8,000 Steps</div>
                 <div className="text-xs text-[var(--text-muted)]">Walk, move, get outside</div>
               </div>
             </div>
@@ -430,8 +426,8 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
     const sw = parseFloat(startWeight) || CONFIG.startWeight;
     const gw = parseFloat(goalWeight) || CONFIG.goalWeight;
     const toLose = Math.round((sw - gw) * 10) / 10;
-    const weeksAvail = CONFIG.totalWeeks;
-    const ratePerWeek = Math.round((toLose / weeksAvail) * 100) / 100;
+    const weeksToGoal = 39; // Apr 1 → Dec 31, 2026
+    const ratePerWeek = Math.round((toLose / weeksToGoal) * 100) / 100;
 
     return (
       <div className="min-h-screen relative z-10 flex flex-col justify-center px-6">
@@ -461,8 +457,12 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
             </div>
             <div className="h-[1px] bg-[var(--border)] my-3" />
             <div className="flex justify-between text-[12px] text-[var(--text-secondary)]">
-              <span>Timeline</span>
-              <span className="mono font-semibold">{weeksAvail} weeks (Apr–Dec)</span>
+              <span>Goal deadline</span>
+              <span className="mono font-semibold">Dec 31, 2026 ({weeksToGoal} weeks)</span>
+            </div>
+            <div className="flex justify-between text-[12px] text-[var(--text-secondary)] mt-1.5">
+              <span>Challenge duration</span>
+              <span className="mono font-semibold">{CONFIG.totalWeeks} weeks (1 year)</span>
             </div>
             <div className="flex justify-between text-[12px] text-[var(--text-secondary)] mt-1.5">
               <span>Required rate</span>
@@ -480,7 +480,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
               </div>
               <div className="flex gap-3">
                 <span className="text-base shrink-0 mt-0.5">👟</span>
-                <div><span className="text-[var(--text)] font-semibold">10,000 steps/day</span> burns ~400–600 additional calories. Combined with diet = 0.5–0.8 kg/week.</div>
+                <div><span className="text-[var(--text)] font-semibold">8,000 steps/day</span> burns ~300–500 additional calories. Combined with diet = 0.4–0.7 kg/week.</div>
               </div>
               <div className="flex gap-3">
                 <span className="text-base shrink-0 mt-0.5">💪</span>
@@ -500,6 +500,14 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
                 <span> This is aggressive but doable with consistency. The first few weeks will show larger drops. Stay locked in.</span>
               )}
             </p>
+          </div>
+
+          <div className="card p-5 mb-4" style={{ borderColor: 'rgba(248,113,113,0.15)' }}>
+            <div className="text-[10px] font-semibold tracking-widest uppercase text-[var(--red)] mb-2">Cheat days</div>
+            <div className="space-y-2 text-[12px] text-[var(--text-secondary)]">
+              <div className="flex gap-2"><span className="text-[var(--red)]">✕</span><span><span className="text-[var(--text)] font-semibold">Days 1–30:</span> Zero cheat days. No exceptions. Build the foundation.</span></div>
+              <div className="flex gap-2"><span className="text-[var(--btc)]">→</span><span><span className="text-[var(--text)] font-semibold">After day 30:</span> You earn 1 cheat day every 30 days. A cheat day means your streaks don&apos;t break — but you earn 0 sats that day.</span></div>
+            </div>
           </div>
 
           <div className="card p-4" style={{ background: 'var(--bg)' }}>
