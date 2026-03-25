@@ -190,15 +190,18 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
             <div>
               <label className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] block mb-2">Strike username</label>
               <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="your_handle"
-                  value={username}
-                  onChange={(e) => { setUsername(e.target.value); setVerified(false); setVerifyError(''); }}
-                  className="flex-1 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl px-4 py-3 text-base focus:outline-none focus:border-[var(--btc)]"
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                />
+                <div className="flex-1 flex items-center bg-[var(--bg-card)] border border-[var(--border)] rounded-xl overflow-hidden focus-within:border-[var(--btc)] transition-colors">
+                  <input
+                    type="text"
+                    placeholder="yourname"
+                    value={username}
+                    onChange={(e) => { setUsername(e.target.value.replace(/\s/g, '').toLowerCase()); setVerified(false); setVerifyError(''); }}
+                    className="flex-1 bg-transparent px-4 py-3 text-base focus:outline-none"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                  />
+                  <span className="text-[12px] text-[var(--text-muted)] pr-3 mono">@strike.me</span>
+                </div>
                 <button
                   onClick={handleVerify}
                   disabled={!username.trim() || verifying || verified}
@@ -441,7 +444,11 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
     const sw = parseFloat(startWeight) || CONFIG.startWeight;
     const gw = parseFloat(goalWeight) || CONFIG.goalWeight;
     const toLose = Math.round((sw - gw) * 10) / 10;
-    const weeksToGoal = 39; // Apr 1 → Dec 31, 2026
+    const weeksToGoal = CONFIG.totalWeeks;
+    const chosenStart = startDate ? new Date(startDate) : new Date();
+    const endDate = new Date(chosenStart);
+    endDate.setDate(endDate.getDate() + weeksToGoal * 7);
+    const endStr = endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     const ratePerWeek = Math.round((toLose / weeksToGoal) * 100) / 100;
 
     return (
@@ -473,7 +480,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
             <div className="h-[1px] bg-[var(--border)] my-3" />
             <div className="flex justify-between text-[12px] text-[var(--text-secondary)]">
               <span>Challenge</span>
-              <span className="mono font-semibold">Apr 1 → Dec 31, 2026 ({weeksToGoal} weeks)</span>
+              <span className="mono font-semibold">{weeksToGoal} weeks → {endStr}</span>
             </div>
             <div className="flex justify-between text-[12px] text-[var(--text-secondary)] mt-1.5">
               <span>Required rate</span>
@@ -506,7 +513,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
             <p className="text-[13px] text-[var(--text-secondary)] leading-relaxed">
               You need <span className="mono font-semibold text-[var(--text)]">{ratePerWeek} kg/week</span>. The plan delivers <span className="mono font-semibold text-[var(--green)]">0.7–1.0 kg/week</span>. 
               {ratePerWeek <= 1.0 ? (
-                <span> This is <span className="text-[var(--green)] font-semibold">achievable and within safe weight loss guidelines</span> (0.5–1.0 kg/week recommended). Stay consistent and the math works.</span>
+                <span> This is <span className="text-[var(--green)] font-semibold">achievable</span>. Stay consistent and the math works.</span>
               ) : (
                 <span> This is aggressive but doable with consistency. The first few weeks will show larger drops. Stay locked in.</span>
               )}
@@ -531,10 +538,6 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
               <div className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-[var(--btc)]" />
                 <span>Weigh yourself weekly, same day, same time, same conditions</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-[var(--btc)]" />
-                <span>Protein target: 130g+ daily to preserve muscle during deficit</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-[var(--btc)]" />

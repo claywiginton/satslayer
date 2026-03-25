@@ -87,6 +87,13 @@ export async function saveHabitValue(habit: HabitType, value: number): Promise<b
   const today = getTodayStr();
 
   const existing = await getTodayLog();
+
+  // GUARDRAIL: if this habit was already logged today with a valid value, block it
+  if (existing && habitMet(habit, existing[habit])) {
+    console.log('Habit already completed today, blocking duplicate:', habit);
+    return false;
+  }
+
   if (existing) {
     const { error } = await supabase
       .from('day_logs')
@@ -259,6 +266,20 @@ export async function getWeighIns(): Promise<WeighIn[]> {
 }
 
 export async function saveWeighIn(weekNumber: number, weight: number, previousWeight: number): Promise<{ success: boolean; satsEarned: number; milestonesHit: string[] }> {
+  // GUARDRAIL: check if already weighed in this week
+  const { data: existingWeighIns } = await supabase
+    .from('weigh_ins').select('id').eq('week_number', weekNumber).limit(1);
+  if (existingWeighIns && existingWeighIns.length > 0) {
+    console.log('Already weighed in this week, blocking duplicate');
+    return { success: false, satsEarned: 0, milestonesHit: [] };
+  }
+
+  // GUARDRAIL: weight must be reasonable (30-300 kg)
+  if (weight < 30 || weight > 300) {
+    console.log('Weight out of reasonable range:', weight);
+    return { success: false, satsEarned: 0, milestonesHit: [] };
+  }
+
   const reward = calculateWeighInReward(weight, previousWeight);
   const existing = await getHitMilestones();
   const newMs = checkMilestones(weight, existing);

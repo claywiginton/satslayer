@@ -20,6 +20,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
     }
 
+    // GUARDRAIL: cap single payout at 200,000 sats (milestone max + weigh-in max)
+    const MAX_SINGLE_PAYOUT = 200_000;
+    if (sats > MAX_SINGLE_PAYOUT || sats <= 0) {
+      console.error('Payout blocked — out of range:', sats);
+      return NextResponse.json({ error: 'Payout amount out of range', sats }, { status: 400 });
+    }
+
     const strikeKey = process.env.STRIKE_API_KEY;
     const payoutsEnabled = process.env.STRIKE_PAYOUTS_ENABLED === 'true';
 

@@ -182,21 +182,29 @@ export function getTodayStr(): string {
 
 // ── WEIGH-IN CALC ──
 
+// Max weight loss allowed per week (anything beyond is capped — prevents accidental huge payouts)
+const MAX_WEEKLY_LOSS_KG = 5;
+
 export function calculateWeighInReward(currentWeight: number, previousWeight: number): {
   baseSats: number;
   bonusSats: number;
   totalSats: number;
   unitsLost: number;
+  capped: boolean;
 } {
-  const unitsLost = Math.max(0, Math.round((previousWeight - currentWeight) * 10) / 10);
+  const rawLoss = Math.max(0, Math.round((previousWeight - currentWeight) * 10) / 10);
+  const unitsLost = Math.min(rawLoss, MAX_WEEKLY_LOSS_KG); // Cap at 5kg
+  const capped = rawLoss > MAX_WEEKLY_LOSS_KG;
   const baseSats = currentWeight <= previousWeight ? CONFIG.weighInBase : 0;
   const bonusSats = Math.round(unitsLost * CONFIG.weighInPerUnit);
   const totalSats = Math.min(baseSats + bonusSats, CONFIG.weighInMaxPayout);
-  return { baseSats, bonusSats, totalSats, unitsLost };
+  return { baseSats, bonusSats, totalSats, unitsLost, capped };
 }
 
 export function checkMilestones(weight: number, alreadyHit: string[]): Milestone[] {
-  return CONFIG.milestones.filter((m) => weight <= m.weight && !alreadyHit.includes(m.label));
+  // Must hit the milestone weight on the dot — floor to whole kg
+  const wholeWeight = Math.floor(weight);
+  return CONFIG.milestones.filter((m) => wholeWeight <= m.weight && !alreadyHit.includes(m.label));
 }
 
 export function formatSats(sats: number): string {
