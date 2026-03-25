@@ -51,10 +51,10 @@ export default function SatSlayer() {
       });
   }, [profile]);
 
-  const handleOnboardingComplete = async (username: string, startWeight: number, telegramChatId?: string) => {
-    const saved = await savePlayerProfile(username, startWeight, CONFIG.goalWeight, telegramChatId);
+  const handleOnboardingComplete = async (username: string, startWeight: number, telegramChatId?: string, startDate?: string) => {
+    const saved = await savePlayerProfile(username, startWeight, CONFIG.goalWeight, telegramChatId, startDate);
     if (saved) {
-      setProfile({ strikeUsername: username, startWeight, goalWeight: CONFIG.goalWeight, startDate: getTodayStr(), createdAt: new Date().toISOString() });
+      setProfile({ strikeUsername: username, startWeight, goalWeight: CONFIG.goalWeight, startDate: startDate || getTodayStr(), createdAt: new Date().toISOString() });
     } else {
       throw new Error('Failed to save profile — check browser console for details');
     }
@@ -64,8 +64,8 @@ export default function SatSlayer() {
   if (!profile) return <Onboarding onComplete={handleOnboardingComplete} claimed={profileExists} onReset={() => { setProfile(null); setProfileExists(false); }} />;
   if (loading) return <div className="min-h-screen flex items-center justify-center relative z-10"><div className="text-center"><div className="w-8 h-8 border-2 border-[var(--border)] border-t-[var(--btc)] rounded-full animate-spin mx-auto mb-3" /><p className="text-xs text-[var(--text-muted)]">Loading...</p></div></div>;
 
-  const dayNumber = getDayNumber();
-  const weekNumber = getWeekNumber();
+  const dayNumber = getDayNumber(undefined, profile.startDate);
+  const weekNumber = getWeekNumber(undefined, profile.startDate);
   const lastWeight = profile ? (weighIns.length > 0 ? weighIns[weighIns.length - 1].weight : profile.startWeight) : CONFIG.startWeight;
   const alreadyWeighed = weighIns.some((w) => w.weekNumber === weekNumber);
   const streaks = stats?.streaks || [];

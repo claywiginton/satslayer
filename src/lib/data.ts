@@ -159,15 +159,15 @@ export function getNextTier(streakDays: number): { daysUntil: number; nextMultip
 
 // ── DATE HELPERS ──
 
-export function getDayNumber(date?: string): number {
-  const start = new Date(CONFIG.startDate);
+export function getDayNumber(date?: string, customStartDate?: string): number {
+  const start = new Date(customStartDate || CONFIG.startDate);
   const now = date ? new Date(date) : new Date();
   const diff = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
   return Math.max(1, diff + 1);
 }
 
-export function getWeekNumber(date?: string): number {
-  return Math.ceil(getDayNumber(date) / 7);
+export function getWeekNumber(date?: string, customStartDate?: string): number {
+  return Math.ceil(getDayNumber(date, customStartDate) / 7);
 }
 
 export function getDateForDay(dayNumber: number): string {

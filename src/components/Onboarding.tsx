@@ -5,7 +5,7 @@ import { CONFIG, formatSats, satsToUsd } from '@/lib/data';
 import KettlebellLogo from '@/components/KettlebellLogo';
 
 interface Props {
-  onComplete: (username: string, startWeight: number, telegramChatId?: string) => Promise<void> | void;
+  onComplete: (username: string, startWeight: number, telegramChatId?: string, startDate?: string) => Promise<void> | void;
   claimed?: boolean; // true if someone already onboarded
   onReset?: () => void;
 }
@@ -27,6 +27,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
   const [tgName, setTgName] = useState('');
   const [tgError, setTgError] = useState('');
   const [telegramChatId, setTelegramChatId] = useState('');
+  const [startDate, setStartDate] = useState('');
 
   const handleReset = async () => {
     if (!adminPin) return;
@@ -81,7 +82,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
     const sw = parseFloat(startWeight) || CONFIG.startWeight;
     console.log('handleFinish called with:', username.trim().toLowerCase(), sw);
     try {
-      await onComplete(username.trim().toLowerCase(), sw, telegramChatId || undefined);
+      await onComplete(username.trim().toLowerCase(), sw, telegramChatId || undefined, startDate || undefined);
       console.log('onComplete finished successfully');
     } catch (e: any) {
       console.error('Finish error:', e);
@@ -232,11 +233,22 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
                 <span className="text-[10px] text-[var(--text-muted)] ml-2">fixed target</span>
               </div>
             </div>
+
+            <div>
+              <label className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] block mb-2">Start date</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-xl px-4 py-3 text-base mono focus:outline-none focus:border-[var(--btc)] [color-scheme:dark]"
+              />
+              <p className="text-[10px] text-[var(--text-muted)] mt-1.5">Challenge ends {CONFIG.totalWeeks} weeks from this date</p>
+            </div>
           </div>
 
           <button
-            onClick={() => verified && startWeight && setStep(2)}
-            disabled={!verified || !startWeight}
+            onClick={() => verified && startWeight && startDate && setStep(2)}
+            disabled={!verified || !startWeight || !startDate}
             className="w-full mt-6 py-4 rounded-2xl text-base font-bold display tracking-wider bg-[var(--btc)] text-black disabled:opacity-30 active:scale-[0.98] transition-all"
           >
             CONTINUE
