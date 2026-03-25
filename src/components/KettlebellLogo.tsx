@@ -1,24 +1,19 @@
 export default function KettlebellLogo({ size = 36 }: { size?: number }) {
   return (
-    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
-      <img
-        src="/kettlebell.png"
-        alt=""
-        width={size}
-        height={size}
-        style={{ objectFit: 'contain', filter: 'brightness(1.3)' }}
-      />
-      {/* Bitcoin stamp overlay */}
-      <div className="absolute inset-0 flex items-center justify-center" style={{ paddingTop: size * 0.18 }}>
-        <span style={{
-          fontSize: size * 0.32,
-          fontWeight: 800,
-          color: '#f7931a',
-          fontFamily: 'var(--font-display)',
-          textShadow: '0 1px 3px rgba(0,0,0,0.6)',
-          lineHeight: 1,
-        }}>₿</span>
-      </div>
-    </div>
+    <svg width={size} height={size} viewBox="0 0 100 120" fill="none">
+      {/* Handle — connected to body */}
+      <path d="M30,52 C30,20 38,10 50,10 C62,10 70,20 70,52" fill="none" stroke="#666" strokeWidth="9" strokeLinecap="round" />
+      {/* Handle inner gap */}
+      <path d="M36,50 C36,28 42,18 50,18 C58,18 64,28 64,50" fill="var(--bg, #0a0a0b)" stroke="none" />
+      {/* Body */}
+      <ellipse cx="50" cy="72" rx="38" ry="38" fill="#555" />
+      {/* Highlight */}
+      <ellipse cx="38" cy="60" rx="14" ry="16" fill="#6a6a6a" opacity="0.45" />
+      {/* Flat bottom */}
+      <rect x="24" y="100" width="52" height="6" rx="3" fill="#444" />
+      {/* Bitcoin stamp */}
+      <circle cx="50" cy="70" r="18" fill="none" stroke="#f7931a" strokeWidth="1.8" />
+      <text textAnchor="middle" dominantBaseline="central" x="50" y="70" fontSize="20" fontWeight="700" fill="#f7931a" fontFamily="var(--font-display)">₿</text>
+    </svg>
   );
 }
