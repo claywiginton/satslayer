@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chat_id: chatId,
-        text: `🔥 <b>SATSLAYER — Connected!</b>\n\nYou'll get reminders here:\n• Evening nudge if you haven't logged\n• Weekly weigh-in reminders\n• Milestone alerts\n• Streak warnings\n\nLet's go. 💪`,
+        text: `🔥 <b>PROOF OF WORK — Connected!</b>\n\nYou'll get reminders here:\n• Evening nudge if you haven't logged\n• Weekly weigh-in reminders\n• Milestone alerts\n• Streak warnings\n\nLet's go. 💪`,
         parse_mode: 'HTML',
       }),
     });

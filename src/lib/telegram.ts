@@ -43,7 +43,7 @@ export function eveningReminderMessage(
 ): string {
   if (missingHabits.length === 0) return ''; // All done, no reminder needed
 
-  let msg = `🔥 <b>SATSLAYER — Evening Check</b>\n\n`;
+  let msg = `🔥 <b>PROOF OF WORK — Evening Check</b>\n\n`;
 
   if (completedHabits.length > 0) {
     msg += `✅ Done: ${completedHabits.join(', ')}\n`;
@@ -65,13 +65,13 @@ export function eveningReminderMessage(
 }
 
 export function weighInReminderMessage(weekNumber: number): string {
-  return `⚖️ <b>SATSLAYER — Weigh-in Day</b>\n\nWeek ${weekNumber} weigh-in is ready.\nStep on the scale and log your weight to earn sats.\n\n💰 Base reward: 5,000 sats just for showing up.`;
+  return `⚖️ <b>PROOF OF WORK — Weigh-in Day</b>\n\nWeek ${weekNumber} weigh-in is ready.\nStep on the scale and log your weight to earn sats.\n\n💰 Base reward: 5,000 sats just for showing up.`;
 }
 
 export function streakWarningMessage(
   streaks: { name: string; days: number; multiplier: number; satsPerDay: number }[]
 ): string {
-  let msg = `🚨 <b>SATSLAYER — Streak Warning</b>\n\n`;
+  let msg = `🚨 <b>PROOF OF WORK — Streak Warning</b>\n\n`;
   msg += `Your streaks break tomorrow if you don't log today:\n\n`;
 
   for (const s of streaks) {
@@ -88,9 +88,9 @@ export function milestoneAlertMessage(
   unit: string
 ): string {
   const diff = Math.round((currentWeight - nextMilestone.weight) * 10) / 10;
-  return `🎯 <b>SATSLAYER — Milestone Alert</b>\n\nYou're <b>${diff} ${unit}</b> away from "${nextMilestone.label}"!\n\nReward: <b>${nextMilestone.sats.toLocaleString()} sats</b> bonus when you hit ${nextMilestone.weight} ${unit}.\n\nKeep pushing. 💪`;
+  return `🎯 <b>PROOF OF WORK — Milestone Alert</b>\n\nYou're <b>${diff} ${unit}</b> away from "${nextMilestone.label}"!\n\nReward: <b>${nextMilestone.sats.toLocaleString()} sats</b> bonus when you hit ${nextMilestone.weight} ${unit}.\n\nKeep pushing. 💪`;
 }
 
 export function allCompleteMessage(totalSats: number): string {
-  return `✅ <b>SATSLAYER — All Done!</b>\n\nAll 3 habits logged today. +${totalSats.toLocaleString()} sats earned.\n\nSee you tomorrow. 🔥`;
+  return `✅ <b>PROOF OF WORK — All Done!</b>\n\nAll 3 habits logged today. +${totalSats.toLocaleString()} sats earned.\n\nSee you tomorrow. 🔥`;
 }

@@ -1,4 +1,4 @@
-// ── SATSLAYER v2: STREAK MULTIPLIER ENGINE ──
+// ── PROOF OF WORK — STREAK MULTIPLIER ENGINE ──
 
 export type WeightUnit = 'kg' | 'lbs';
 

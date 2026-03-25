@@ -13,6 +13,7 @@ import {
   getPlayerProfile, savePlayerProfile, type PlayerProfile,
 } from '@/lib/db';
 import Onboarding from '@/components/Onboarding';
+import KettlebellLogo from '@/components/KettlebellLogo';
 
 export default function SatSlayer() {
   const [profile, setProfile] = useState<PlayerProfile | null>(null);
@@ -129,10 +130,10 @@ export default function SatSlayer() {
 
       {/* Header */}
       <header className="sticky top-0 z-50 bg-[var(--bg)]/80 backdrop-blur-xl border-b border-[var(--border)]">
-        <div className="max-w-lg mx-auto px-5 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold" style={{ background: 'linear-gradient(135deg, var(--btc), #e8820e)', color: '#000' }}>₿</div>
-            <div className="display text-[15px] tracking-wider">SATSLAYER</div>
+        <div className="max-w-lg mx-auto px-5 py-2.5 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <KettlebellLogo size={32} />
+            <div className="display text-[13px] tracking-wider">PROOF OF WORK</div>
           </div>
           <div className="flex items-center gap-3">
             <div className="text-right">

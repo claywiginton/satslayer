@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'SATSLAYER — Bitcoin Bounty Weight Loss',
-  description: 'Earn sats for crushing daily challenges and dropping weight',
+  title: 'PROOF OF WORK — Mine Bitcoin With Your Body',
+  description: 'Earn sats for completing daily fitness challenges and hitting weight loss goals',
   viewport: 'width=device-width, initial-scale=1, viewport-fit=cover',
 }
 

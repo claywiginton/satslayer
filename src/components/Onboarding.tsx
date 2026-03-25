@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { CONFIG, formatSats, satsToUsd } from '@/lib/data';
+import KettlebellLogo from '@/components/KettlebellLogo';
 
 interface Props {
   onComplete: (username: string, startWeight: number, telegramChatId?: string) => Promise<void> | void;
@@ -97,15 +98,17 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[300px] h-[300px] rounded-full opacity-20" style={{ background: 'radial-gradient(circle, var(--btc), transparent 70%)' }} />
 
         <div className="relative text-center max-w-sm">
-          <div className="text-6xl mb-6">₿</div>
-          <h1 className="display text-5xl leading-tight mb-3" style={{ color: 'var(--btc)' }}>
-            SATSLAYER
+          <div className="flex justify-center mb-5">
+            <KettlebellLogo size={72} />
+          </div>
+          <h1 className="display text-4xl leading-tight mb-2" style={{ color: 'var(--btc)' }}>
+            PROOF OF WORK
           </h1>
-          <p className="text-lg text-[var(--text-secondary)] mb-2">
-            The Bitcoin Bounty
+          <p className="text-[13px] text-[var(--text-secondary)] mb-1 tracking-wide">
+            mine bitcoin with your body
           </p>
           <p className="text-sm text-[var(--text-muted)] leading-relaxed mb-8">
-            Lose weight. Stack sats. Every rep, every step, every meal earns you bitcoin. Miss a day and watch your multiplier reset.
+            Complete daily habits. Build streaks. Earn sats. Miss a day and watch your multiplier reset.
           </p>
 
           <div className="card p-5 mb-8 text-center">
