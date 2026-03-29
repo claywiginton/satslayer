@@ -157,7 +157,7 @@ export function morningMotivationMessage(
   } else {
     msg += `💰 500 sats per habit today — start building that streak.\n`;
   }
-  msg += `\n3 habits. Get it done.`;
+  msg += `\n3 habits. Get it done.\n\n✝️ <i>"I can do all things through Christ who strengthens me."</i> — Philippians 4:13`;
   return msg;
 }
 
