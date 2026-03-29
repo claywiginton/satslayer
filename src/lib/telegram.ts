@@ -125,3 +125,110 @@ export function milestoneAlertMessage(
 export function allCompleteMessage(totalSats: number): string {
   return `✅ <b>PROOF OF WORK</b>\n\nAll 3 habits logged. +${totalSats.toLocaleString()} sats.\n\n${randomLine(ALL_COMPLETE_LINES)}`;
 }
+
+// ── MORNING MOTIVATION ──
+
+const MORNING_LINES = [
+  "New day. New chance to prove it. Let's go.",
+  "The streak doesn't build itself. Get after it.",
+  "Yesterday is done. Today is what matters. Show up.",
+  "Your multiplier is counting on you. Don't let it down.",
+  "Rise and grind. Sats are waiting.",
+  "Every day you show up, the gap closes. Let's work.",
+  "Champions don't take days off. Neither do you.",
+  "The hardest part is the first step. Take it now.",
+  "You're not doing this because it's easy. You're doing it because it pays.",
+  "Another 24 hours to prove you're about that life.",
+];
+
+export function morningMotivationMessage(
+  dayNumber: number,
+  currentStreak: number,
+  multiplier: number,
+  satsPerHabit: number,
+): string {
+  let msg = `☀️ <b>PROOF OF WORK — Day ${dayNumber}</b>\n\n`;
+  msg += randomLine(MORNING_LINES);
+  msg += `\n\n`;
+  if (currentStreak > 0) {
+    msg += `🔥 Streak: ${currentStreak} days\n`;
+    msg += `⚡ Multiplier: ${multiplier}×\n`;
+    msg += `💰 ${satsPerHabit.toLocaleString()} sats per habit today\n`;
+  } else {
+    msg += `💰 500 sats per habit today — start building that streak.\n`;
+  }
+  msg += `\n3 habits. Get it done.`;
+  return msg;
+}
+
+// ── WEEKLY SUMMARY (sent to player) ──
+
+export function weeklySummaryMessage(data: {
+  weekNumber: number;
+  daysLogged: number;
+  satsEarnedThisWeek: number;
+  totalSatsEarned: number;
+  currentWeight: number;
+  weightChange: number;
+  bestStreak: number;
+  bestMultiplier: number;
+  unit: string;
+}): string {
+  const { weekNumber, daysLogged, satsEarnedThisWeek, totalSatsEarned, currentWeight, weightChange, bestStreak, bestMultiplier, unit } = data;
+  let msg = `📊 <b>PROOF OF WORK — Week ${weekNumber} Summary</b>\n\n`;
+  msg += `Days logged: <b>${daysLogged}/7</b>\n`;
+  msg += `Sats earned this week: <b>${satsEarnedThisWeek.toLocaleString()}</b>\n`;
+  msg += `Total sats earned: <b>${totalSatsEarned.toLocaleString()}</b>\n\n`;
+  msg += `⚖️ Current weight: <b>${Math.round(currentWeight * 10) / 10} ${unit}</b>\n`;
+  if (weightChange < 0) {
+    msg += `📉 Down <b>${Math.abs(Math.round(weightChange * 10) / 10)} ${unit}</b> this week — keep going!\n`;
+  } else if (weightChange > 0) {
+    msg += `📈 Up ${Math.round(weightChange * 10) / 10} ${unit} — tighten it up this week.\n`;
+  } else {
+    msg += `➡️ Weight maintained\n`;
+  }
+  msg += `\n🔥 Best streak: ${bestStreak}d (${bestMultiplier}×)\n`;
+  msg += `\nNew week starts now. Make it count.`;
+  return msg;
+}
+
+// ── SPONSOR NOTIFICATIONS ──
+
+export function sponsorHabitLoggedMessage(
+  playerName: string,
+  habit: string,
+  sats: number,
+  streak: number,
+  multiplier: number,
+): string {
+  return `📋 <b>${playerName}</b> logged <b>${habit}</b>\n+${sats.toLocaleString()} sats · ${streak}d streak · ${multiplier}×`;
+}
+
+export function sponsorAllCompleteMessage(playerName: string, totalSats: number): string {
+  return `✅ <b>${playerName}</b> completed all 3 habits today. +${totalSats.toLocaleString()} sats.`;
+}
+
+export function sponsorMissedDayMessage(playerName: string, missingHabits: string[], streaksAtRisk: string[]): string {
+  let msg = `❌ <b>${playerName}</b> missed: ${missingHabits.join(', ')}\n`;
+  if (streaksAtRisk.length > 0) {
+    msg += `⚠️ Streaks broken: ${streaksAtRisk.join(', ')}`;
+  }
+  return msg;
+}
+
+export function sponsorWeighInMessage(playerName: string, weight: number, change: number, sats: number, unit: string): string {
+  const dir = change <= 0 ? '📉' : '📈';
+  const changeStr = change <= 0 ? `down ${Math.abs(Math.round(change * 10) / 10)}` : `up ${Math.round(change * 10) / 10}`;
+  return `⚖️ <b>${playerName}</b> weighed in: <b>${Math.round(weight * 10) / 10} ${unit}</b> (${dir} ${changeStr} ${unit})\n+${sats.toLocaleString()} sats`;
+}
+
+export function sponsorWeeklySummaryMessage(playerName: string, data: {
+  weekNumber: number;
+  daysLogged: number;
+  satsEarnedThisWeek: number;
+  totalSatsEarned: number;
+  totalSatsPaid: number;
+}): string {
+  const { weekNumber, daysLogged, satsEarnedThisWeek, totalSatsEarned } = data;
+  return `📊 <b>Sponsor Report — Week ${weekNumber}</b>\n\n${playerName}: ${daysLogged}/7 days logged\nPaid this week: ${satsEarnedThisWeek.toLocaleString()} sats\nTotal paid: ${totalSatsEarned.toLocaleString()} sats`;
+}
