@@ -573,15 +573,11 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
           <div className="card p-4 mb-4">
             <div className="space-y-2 text-sm">
               <div className="flex justify-between text-[var(--text-secondary)]">
-                <span>Log your weight</span>
-                <span className="mono text-[var(--btc)]">+{formatSats(CONFIG.weighInBase)}</span>
+                <span>Lost at least 0.2 kg</span>
+                <span className="mono text-[var(--btc)]">+{formatSats(CONFIG.weighInPayout)}</span>
               </div>
               <div className="flex justify-between text-[var(--text-secondary)]">
-                <span>Per kg lost</span>
-                <span className="mono text-[var(--btc)]">+{formatSats(CONFIG.weighInPerUnit)}</span>
-              </div>
-              <div className="flex justify-between text-[var(--text-secondary)]">
-                <span>Gained weight</span>
+                <span>Didn&apos;t lose enough</span>
                 <span className="mono text-[var(--red)]">0 sats</span>
               </div>
             </div>

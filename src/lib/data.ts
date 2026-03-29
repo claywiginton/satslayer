@@ -30,10 +30,10 @@ export const CONFIG = {
     { minDays: 61, multiplier: 20 },  // Days 61+ — max
   ],
 
-  // Weekly weigh-in (per kg lost now, since we're in kg)
-  weighInBase: 5_000,
-  weighInPerUnit: 10_000,   // per kg lost (was per lb)
-  weighInMaxPayout: 75_000,
+  // Weekly weigh-in — flat payout if lost at least 0.2 kg
+  weighInPayout: 10_000,
+  weighInMinLoss: 0.2,
+
 
   // Milestone jackpots (in kg)
   milestones: [
@@ -183,22 +183,15 @@ export function getTodayStr(): string {
 // ── WEIGH-IN CALC ──
 
 // Max weight loss allowed per week (anything beyond is capped — prevents accidental huge payouts)
-const MAX_WEEKLY_LOSS_KG = 5;
-
 export function calculateWeighInReward(currentWeight: number, previousWeight: number): {
-  baseSats: number;
-  bonusSats: number;
   totalSats: number;
-  unitsLost: number;
-  capped: boolean;
+  qualified: boolean;
+  weightLost: number;
 } {
-  const rawLoss = Math.max(0, Math.round((previousWeight - currentWeight) * 10) / 10);
-  const unitsLost = Math.min(rawLoss, MAX_WEEKLY_LOSS_KG); // Cap at 5kg
-  const capped = rawLoss > MAX_WEEKLY_LOSS_KG;
-  const baseSats = currentWeight <= previousWeight ? CONFIG.weighInBase : 0;
-  const bonusSats = Math.round(unitsLost * CONFIG.weighInPerUnit);
-  const totalSats = Math.min(baseSats + bonusSats, CONFIG.weighInMaxPayout);
-  return { baseSats, bonusSats, totalSats, unitsLost, capped };
+  const weightLost = Math.round((previousWeight - currentWeight) * 10) / 10;
+  const qualified = weightLost >= CONFIG.weighInMinLoss;
+  const totalSats = qualified ? CONFIG.weighInPayout : 0;
+  return { totalSats, qualified, weightLost };
 }
 
 export function checkMilestones(weight: number, alreadyHit: string[]): Milestone[] {

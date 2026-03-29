@@ -15,6 +15,32 @@ import {
 import Onboarding from '@/components/Onboarding';
 import KettlebellLogo from '@/components/KettlebellLogo';
 
+function CountdownTimer() {
+  const [timeLeft, setTimeLeft] = useState('');
+  useEffect(() => {
+    const update = () => {
+      const now = new Date();
+      const midnight = new Date(now);
+      midnight.setHours(24, 0, 0, 0);
+      const diff = midnight.getTime() - now.getTime();
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setTimeLeft(`${h}h ${m}m ${s}s`);
+    };
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="mb-4 py-2.5 px-4 rounded-xl flex items-center justify-between" style={{ background: 'rgba(248,113,113,0.06)', border: '1px solid rgba(248,113,113,0.12)' }}>
+      <span className="text-[11px] text-[var(--red)]">⏰ Streak resets in</span>
+      <span className="mono text-[13px] font-bold text-[var(--red)]">{timeLeft}</span>
+    </div>
+  );
+}
+
 export default function SatSlayer() {
   const [profile, setProfile] = useState<PlayerProfile | null>(null);
   const [profileChecked, setProfileChecked] = useState(false);
@@ -180,6 +206,31 @@ export default function SatSlayer() {
                 <div className="text-[13px] font-semibold" style={{ color: 'var(--green)' }}>✨ All habits complete — you earned {formatSats(totalDailyPotential)} sats today</div>
               </div>
             )}
+
+            {/* Streak countdown timer — shows when habits are incomplete */}
+            {!todayComplete && (
+              <CountdownTimer />
+            )}
+
+            {/* Pace tracker */}
+            <div className="card p-4 mb-5">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-semibold tracking-widest uppercase text-[var(--text-muted)]">Bounty progress</span>
+                <span className="mono text-[11px] text-[var(--btc)]">{Math.round(((stats?.totalSatsEarned || 0) / CONFIG.totalSats) * 100)}%</span>
+              </div>
+              <div className="h-[6px] bg-[var(--bg)] rounded-full overflow-hidden mb-2">
+                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(((stats?.totalSatsEarned || 0) / CONFIG.totalSats) * 100, 100)}%`, background: 'linear-gradient(90deg, var(--btc), #e8820e)' }} />
+              </div>
+              <div className="flex justify-between text-[10px] text-[var(--text-muted)]">
+                <span className="mono">{formatSats(stats?.totalSatsEarned || 0)} earned</span>
+                <span className="mono">{formatSats(CONFIG.totalSats)} total</span>
+              </div>
+              {stats && stats.totalSatsEarned > 0 && dayNumber > 1 && (
+                <div className="text-[10px] text-[var(--text-muted)] text-center mt-2">
+                  Pace: ~{formatSats(Math.round((stats.totalSatsEarned / dayNumber) * 7))} sats/week · projected total: {formatSats(Math.min(Math.round((stats.totalSatsEarned / dayNumber) * CONFIG.totalWeeks * 7), CONFIG.totalSats))}
+                </div>
+              )}
+            </div>
 
             {/* Habit cards — each is its own big card */}
             <div className="space-y-3 mb-6">
@@ -398,15 +449,16 @@ export default function SatSlayer() {
                   {/* Reward preview */}
                   {wiWeight && (() => {
                     const inputKg = weightUnit === 'lbs' ? lbsToKg(parseFloat(wiWeight)) : parseFloat(wiWeight);
-                    const diff = Math.round(Math.abs(lastWeight - inputKg) * 10) / 10;
+                    const loss = Math.round((lastWeight - inputKg) * 10) / 10;
+                    const qualified = loss >= CONFIG.weighInMinLoss;
                     return (
                       <div className="mt-3 p-4 rounded-2xl bg-[var(--bg)]">
-                        {inputKg < lastWeight ? (
-                          <div className="text-center"><div className="mono text-[20px] text-[var(--btc)]">+{formatSats(Math.min(CONFIG.weighInBase + Math.round(diff * CONFIG.weighInPerUnit), CONFIG.weighInMaxPayout))}</div><div className="text-[11px] text-[var(--green)] mt-1">↓{dw(diff)} {wu} — nice work</div></div>
-                        ) : inputKg === lastWeight ? (
-                          <div className="text-center"><div className="mono text-[20px] text-[var(--btc)]">+{formatSats(CONFIG.weighInBase)}</div><div className="text-[11px] text-[var(--text-muted)] mt-1">Maintained</div></div>
+                        {qualified ? (
+                          <div className="text-center"><div className="mono text-[20px] text-[var(--btc)]">+{formatSats(CONFIG.weighInPayout)}</div><div className="text-[11px] text-[var(--green)] mt-1">↓{dw(Math.abs(loss))} {wu} — nice work</div></div>
+                        ) : loss > 0 ? (
+                          <div className="text-center"><div className="mono text-[20px] text-[var(--text-muted)]">0 sats</div><div className="text-[11px] text-[var(--text-muted)] mt-1">↓{dw(loss)} {wu} — need at least {CONFIG.weighInMinLoss} {wu} loss to qualify</div></div>
                         ) : (
-                          <div className="text-center"><div className="mono text-[20px] text-[var(--red)]">0 sats</div><div className="text-[11px] text-[var(--red)] mt-1">↑{dw(diff)} {wu} — no reward</div></div>
+                          <div className="text-center"><div className="mono text-[20px] text-[var(--red)]">0 sats</div><div className="text-[11px] text-[var(--red)] mt-1">{loss === 0 ? 'No change' : `↑${dw(Math.abs(loss))} ${wu}`} — no reward</div></div>
                         )}
                       </div>
                     );
