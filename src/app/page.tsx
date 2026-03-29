@@ -19,10 +19,12 @@ function CountdownTimer() {
   const [timeLeft, setTimeLeft] = useState('');
   useEffect(() => {
     const update = () => {
+      // Calculate time until midnight in Germany (Europe/Berlin)
       const now = new Date();
-      const midnight = new Date(now);
-      midnight.setHours(24, 0, 0, 0);
-      const diff = midnight.getTime() - now.getTime();
+      const germanyNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Berlin' }));
+      const germanyMidnight = new Date(germanyNow);
+      germanyMidnight.setHours(24, 0, 0, 0);
+      const diff = germanyMidnight.getTime() - germanyNow.getTime();
       const h = Math.floor(diff / 3600000);
       const m = Math.floor((diff % 3600000) / 60000);
       const s = Math.floor((diff % 60000) / 1000);

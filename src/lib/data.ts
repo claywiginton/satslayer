@@ -161,7 +161,7 @@ export function getNextTier(streakDays: number): { daysUntil: number; nextMultip
 
 export function getDayNumber(date?: string, customStartDate?: string): number {
   const start = new Date(customStartDate || CONFIG.startDate);
-  const now = date ? new Date(date) : new Date();
+  const now = date ? new Date(date) : new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Berlin' }));
   const diff = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
   return Math.max(1, diff + 1);
 }
@@ -177,7 +177,10 @@ export function getDateForDay(dayNumber: number): string {
 }
 
 export function getTodayStr(): string {
-  return new Date().toISOString().split('T')[0];
+  // Use Germany timezone for day boundaries
+  const now = new Date();
+  const germany = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Berlin' }));
+  return germany.toISOString().split('T')[0];
 }
 
 // ── WEIGH-IN CALC ──
