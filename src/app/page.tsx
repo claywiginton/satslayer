@@ -9,7 +9,7 @@ import {
 } from '@/lib/data';
 import {
   getDayLogs, getTodayLog, saveHabitValue, logSats, calculateStreaks,
-  getWeighIns, saveWeighIn, getPlayerStats,
+  getWeighIns, saveWeighIn, getPlayerStats, getSatsLog,
   getPlayerProfile, savePlayerProfile, type PlayerProfile,
 } from '@/lib/db';
 import Onboarding from '@/components/Onboarding';
@@ -61,6 +61,7 @@ export default function SatSlayer() {
   const [habitInputs, setHabitInputs] = useState<Record<HabitType, string>>({ steps: '', workout: '', calories: '' });
   const [weightUnit, setWeightUnit] = useState<WeightUnit>(CONFIG.defaultUnit);
   const [showTiers, setShowTiers] = useState(false);
+  const [satsLog, setSatsLog] = useState<{ date: string; habit: string; sats: number }[]>([]);
 
   const dw = (kg: number) => `${Math.round((weightUnit === 'lbs' ? kgToLbs(kg) : kg) * 10) / 10}`;
   const wu = weightUnit;
@@ -71,8 +72,8 @@ export default function SatSlayer() {
 
   useEffect(() => {
     if (!profile) return;
-    Promise.all([getPlayerStats(), getTodayLog(), getDayLogs(), getWeighIns()])
-      .then(([s, t, d, w]) => { setStats(s); setTodayLog(t); setDayLogs(d); setWeighIns(w); setLoading(false); })
+    Promise.all([getPlayerStats(), getTodayLog(), getDayLogs(), getWeighIns(), getSatsLog()])
+      .then(([s, t, d, w, sl]) => { setStats(s); setTodayLog(t); setDayLogs(d); setWeighIns(w); setSatsLog(sl); setLoading(false); })
       .catch(() => {
         setStats({ totalSatsEarned: 0, currentWeight: profile.startWeight, totalLost: 0, streaks: HABITS.map((h) => ({ type: h.type, currentStreak: 0, multiplier: 1, satsPerCompletion: 500, longestStreak: 0 })), totalDaysLogged: 0, weighInsLogged: 0, milestonesHit: [] });
         setLoading(false);
@@ -327,15 +328,21 @@ export default function SatSlayer() {
                         </div>
                       )}
 
-                      {/* Workout — big tap button */}
+                      {/* Workout — big tap button or rest day */}
                       {!completed && habit.inputType === 'boolean' && (
-                        <button
-                          onClick={() => handleSubmitHabit(habit.type)}
-                          disabled={isToggling}
-                          className="w-full mt-4 py-4 rounded-2xl text-[15px] font-bold display tracking-wider text-black active:scale-[0.98] transition-all disabled:opacity-40"
-                          style={{ background: `linear-gradient(135deg, ${habit.color}, ${habit.color}cc)` }}>
-                          {isToggling ? 'LOGGING...' : "YES — I WORKED OUT 💪"}
-                        </button>
+                        isWeekly && weeklyCount >= (habit.weeklyTarget || 3) ? (
+                          <div className="mt-3 py-3 px-4 rounded-xl text-center" style={{ background: 'rgba(52,211,153,0.06)' }}>
+                            <span className="text-[13px] text-[var(--green)]">✅ {weeklyCount}/{habit.weeklyTarget} done this week — rest day earned</span>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleSubmitHabit(habit.type)}
+                            disabled={isToggling}
+                            className="w-full mt-4 py-4 rounded-2xl text-[15px] font-bold display tracking-wider text-black active:scale-[0.98] transition-all disabled:opacity-40"
+                            style={{ background: `linear-gradient(135deg, ${habit.color}, ${habit.color}cc)` }}>
+                            {isToggling ? 'LOGGING...' : "YES — I WORKED OUT 💪"}
+                          </button>
+                        )
                       )}
 
                       {/* Next tier hint */}
@@ -560,6 +567,47 @@ export default function SatSlayer() {
               <div className="card p-4 text-center"><div className="text-[9px] font-semibold tracking-widest uppercase text-[var(--text-muted)]">Days logged</div><div className="mono text-xl mt-1">{stats.totalDaysLogged}</div></div>
               <div className="card p-4 text-center"><div className="text-[9px] font-semibold tracking-widest uppercase text-[var(--text-muted)]">Weigh-ins</div><div className="mono text-xl mt-1">{stats.weighInsLogged}<span className="text-sm text-[var(--text-muted)]">/{CONFIG.totalWeeks}</span></div></div>
             </div>
+
+            {/* Daily sats breakdown */}
+            {satsLog.length > 0 && (
+              <div className="card p-5">
+                <div className="text-[9px] font-semibold tracking-widest uppercase text-[var(--text-muted)] mb-3">Daily earnings</div>
+                <div className="space-y-1.5">
+                  {(() => {
+                    // Group sats by date
+                    const byDate: Record<string, { total: number; habits: string[] }> = {};
+                    for (const entry of satsLog) {
+                      if (!byDate[entry.date]) byDate[entry.date] = { total: 0, habits: [] };
+                      byDate[entry.date].total += entry.sats;
+                      byDate[entry.date].habits.push(entry.habit);
+                    }
+                    return Object.entries(byDate)
+                      .sort(([a], [b]) => b.localeCompare(a))
+                      .slice(0, 14) // Show last 14 days
+                      .map(([date, data]) => {
+                        const dayNum = getDayNumber(date, profile.startDate);
+                        const allThree = data.habits.length >= 3;
+                        return (
+                          <div key={date} className="flex items-center justify-between py-1.5 px-3 rounded-lg" style={allThree ? { background: 'rgba(52,211,153,0.04)' } : {}}>
+                            <div className="flex items-center gap-2.5">
+                              <span className="text-[10px] text-[var(--text-muted)] mono w-12">Day {dayNum}</span>
+                              <div className="flex gap-1">
+                                {HABITS.map(h => (
+                                  <span key={h.type} className="w-2 h-2 rounded-full" style={{ background: data.habits.includes(h.type) ? h.color : 'var(--border)' }} />
+                                ))}
+                              </div>
+                            </div>
+                            <span className="mono text-[11px] font-semibold text-[var(--btc)]">+{formatSats(data.total)}</span>
+                          </div>
+                        );
+                      });
+                  })()}
+                </div>
+                {satsLog.length > 14 && (
+                  <div className="text-[10px] text-[var(--text-muted)] text-center mt-3">Showing last 14 days</div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </main>

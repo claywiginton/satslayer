@@ -27,7 +27,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
   const [tgName, setTgName] = useState('');
   const [tgError, setTgError] = useState('');
   const [telegramChatId, setTelegramChatId] = useState('');
-  const [startDate, setStartDate] = useState('');
+  const [startDate, setStartDate] = useState(() => new Date().toISOString().split('T')[0]);
 
   const handleReset = async () => {
     if (!adminPin) return;
@@ -109,7 +109,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
             mine bitcoin with your body
           </p>
           <p className="text-sm text-[var(--text-muted)] leading-relaxed mb-8">
-            Complete daily habits. Build streaks. Earn sats. Miss a day and watch your multiplier reset.
+            Eddy, this is your challenge. Complete daily habits. Build streaks. Earn sats. Miss a day and watch your multiplier reset.
           </p>
 
           <div className="card p-5 mb-8 text-center">
@@ -458,7 +458,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
             {[0,1,2,3,4,5,6].map((i) => <div key={i} className="h-1 rounded-full w-5" style={{ background: i <= 5 ? 'var(--btc)' : 'var(--border)' }} />)}
           </div>
 
-          <h2 className="display text-2xl mb-2 text-center">THE PLAN</h2>
+          <h2 className="display text-2xl mb-2 text-center">EDDY&apos;S PLAN</h2>
           <p className="text-sm text-[var(--text-muted)] text-center mb-6">The math behind your transformation</p>
 
           {/* The numbers */}
@@ -612,7 +612,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
             disabled={saving}
             className="w-full py-5 rounded-2xl text-lg font-bold display tracking-wider bg-[var(--btc)] text-black active:scale-[0.98] transition-all glow-btc disabled:opacity-50"
           >
-            {saving ? 'SETTING UP...' : "LET'S GO — DAY 1 STARTS NOW"}
+            {saving ? 'SETTING UP...' : "LET'S GO EDDY — DAY 1 STARTS NOW"}
           </button>
         </div>
       </div>
