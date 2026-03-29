@@ -89,8 +89,6 @@ export default function SatSlayer() {
       const sats = getSatsForHabit(streakData[habit].current);
       await logSats(getTodayStr(), habit, sats);
       fetch('/api/payout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: profile!.strikeUsername, sats, reason: `${habit} streak day ${streakData[habit].current}` }) }).catch(() => {});
-      // Notify sponsor of each habit
-      fetch('/api/telegram', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'habit_logged', data: { habit, sats, streak: streakData[habit].current, multiplier: getMultiplier(streakData[habit].current) } }) }).catch(() => {});
       const [s, t, d] = await Promise.all([getPlayerStats(), getTodayLog(), getDayLogs()]);
       setStats(s); setTodayLog(t); setDayLogs(d);
       setShowReward({ sats, habit });
