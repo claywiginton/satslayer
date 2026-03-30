@@ -5,7 +5,7 @@ import {
   CONFIG, HABITS, formatSats, satsToUsd, getMultiplier, getSatsForHabit, getNextTier,
   getDayNumber, getWeekNumber, getTodayStr, calculateWeighInReward,
   type HabitType, type HabitStreak, type PlayerStats, type WeighIn, type DayLog, type WeightUnit,
-  habitMet, kgToLbs, lbsToKg, formatWeight,
+  habitMet, kgToLbs, lbsToKg, formatWeight, getCalorieStatus, caloriesMet, getCheatDayInfo,
 } from '@/lib/data';
 import {
   getDayLogs, getTodayLog, saveHabitValue, logSats, calculateStreaks,
@@ -109,23 +109,46 @@ export default function SatSlayer() {
     const alreadyDone = todayLog ? habitMet(habit, todayLog[habit]) : false;
     if (alreadyDone) return;
     let value: number;
-    if (habit === 'workout') { value = 1; }
-    else { value = parseFloat(habitInputs[habit]); if (isNaN(value) || value <= 0 || !habitMet(habit, value)) return; }
+    if (habit === 'workout' || habit === 'sugar') { value = 1; }
+    else { value = parseFloat(habitInputs[habit]); if (isNaN(value) || value <= 0) return; }
+
+    // For calories: check if this is a cheat day
+    const isCheatDayLog = habit === 'calories' && getCalorieStatus(value) === 'cheat';
+    
+    // Validate: normal habits must meet threshold, calories can be cheat if available
+    if (habit === 'calories') {
+      const calStatus = getCalorieStatus(value);
+      const usedCheatDays = dayLogs.filter(d => getCalorieStatus(d.calories) === 'cheat').length;
+      const cheatInfo = getCheatDayInfo(dayNumber, usedCheatDays);
+      if (calStatus === 'fail') return;
+      if (calStatus === 'cheat' && !cheatInfo.available) return;
+      if (calStatus === 'not_logged') return;
+    } else if (habit !== 'workout' && habit !== 'sugar') {
+      if (!habitMet(habit, value)) return;
+    }
+
     setToggling(habit);
     const ok = await saveHabitValue(habit, value);
     if (ok) {
       const updatedLog: DayLog = { date: getTodayStr(), steps: habit === 'steps' ? value : (todayLog?.steps || 0), workout: habit === 'workout' ? value : (todayLog?.workout || 0), calories: habit === 'calories' ? value : (todayLog?.calories || 0), sugar: habit === 'sugar' ? value : (todayLog?.sugar || 0) };
       const streakData = calculateStreaks([...dayLogs.filter(d => d.date !== getTodayStr()), updatedLog]);
-      const sats = getSatsForHabit(streakData[habit].current);
-      await logSats(getTodayStr(), habit, sats);
-      fetch('/api/payout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: profile!.strikeUsername, sats, reason: `${habit} streak day ${streakData[habit].current}` }) }).catch(() => {});
+      
+      // Cheat day: 0 sats but streak doesn't break
+      const sats = isCheatDayLog ? 0 : getSatsForHabit(streakData[habit].current);
+      if (sats > 0) {
+        await logSats(getTodayStr(), habit, sats);
+        fetch('/api/payout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: profile!.strikeUsername, sats, reason: `${habit} streak day ${streakData[habit].current}` }) }).catch(() => {});
+      }
       const [s, t, d] = await Promise.all([getPlayerStats(), getTodayLog(), getDayLogs()]);
       setStats(s); setTodayLog(t); setDayLogs(d);
-      setShowReward({ sats, habit });
+      setShowReward({ sats, habit: isCheatDayLog ? 'cheat day — streak safe' : habit });
       setTimeout(() => setShowReward(null), 2500);
       setHabitInputs(prev => ({ ...prev, [habit]: '' }));
       if (t) {
-        const allDone = HABITS.every(h => habitMet(h.type, t[h.type]));
+        const allDone = HABITS.every(h => {
+          if (h.type === 'calories') return t.calories > 0 && getCalorieStatus(t.calories) !== 'fail';
+          return habitMet(h.type, t[h.type]);
+        });
         if (allDone) fetch('/api/telegram', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'all_complete', data: { totalSats: sats } }) }).catch(() => {});
       }
     }
@@ -241,11 +264,29 @@ export default function SatSlayer() {
               {HABITS.map((habit) => {
                 const streak = streaks.find((s) => s.type === habit.type);
                 const todayVal = todayLog ? todayLog[habit.type] : 0;
-                const completed = habitMet(habit.type, todayVal);
+                const completed = habit.type === 'calories' 
+                  ? (todayVal > 0 && getCalorieStatus(todayVal) !== 'fail') 
+                  : habitMet(habit.type, todayVal);
                 const isToggling = toggling === habit.type;
                 const nextTier = streak ? getNextTier(streak.currentStreak) : null;
                 const inputVal = habitInputs[habit.type];
-                const meetsThreshold = habit.inputType === 'boolean' || (inputVal && habitMet(habit.type, parseFloat(inputVal)));
+                
+                // Cheat day logic for calories
+                const usedCheatDays = dayLogs.filter(d => getCalorieStatus(d.calories) === 'cheat').length;
+                const cheatDayInfo = getCheatDayInfo(dayNumber, usedCheatDays);
+                
+                let meetsThreshold: boolean;
+                let isCheatDay = false;
+                if (habit.type === 'calories' && inputVal) {
+                  const calStatus = getCalorieStatus(parseFloat(inputVal));
+                  if (calStatus === 'normal') meetsThreshold = true;
+                  else if (calStatus === 'cheat' && cheatDayInfo.available) { meetsThreshold = true; isCheatDay = true; }
+                  else if (calStatus === 'cheat' && !cheatDayInfo.available) meetsThreshold = false;
+                  else meetsThreshold = false; // fail or not_logged
+                } else {
+                  meetsThreshold = habit.inputType === 'boolean' || (!!inputVal && habitMet(habit.type, parseFloat(inputVal)));
+                }
+                
                 const isWeekly = habit.streakMode === 'weekly';
                 let weeklyCount = 0;
                 if (isWeekly) {
@@ -292,7 +333,7 @@ export default function SatSlayer() {
                       {completed && (
                         <div className="mt-3 py-2.5 px-4 rounded-xl text-center" style={{ background: 'rgba(52,211,153,0.06)' }}>
                           <span className="mono text-[13px] text-[var(--green)]">
-                            {habit.type === 'steps' ? `${todayVal.toLocaleString()} steps logged` : habit.type === 'calories' ? `${todayVal.toLocaleString()} cal logged` : habit.type === 'sugar' ? 'No sugar today ✅' : 'Exercise complete'}
+                            {habit.type === 'steps' ? `${todayVal.toLocaleString()} steps logged` : habit.type === 'calories' ? (getCalorieStatus(todayVal) === 'cheat' ? `🎫 ${todayVal.toLocaleString()} cal — cheat day` : `${todayVal.toLocaleString()} cal logged`) : habit.type === 'sugar' ? 'No sugar today ✅' : 'Exercise complete'}
                           </span>
                         </div>
                       )}
@@ -315,7 +356,17 @@ export default function SatSlayer() {
 
                           {inputVal && !meetsThreshold && (
                             <div className="mt-2 text-[11px] text-[var(--red)] text-center">
-                              {habit.thresholdDir === 'gte' ? `Need at least ${habit.threshold.toLocaleString()}` : `Must be under ${habit.threshold.toLocaleString()}`}
+                              {habit.type === 'calories' && getCalorieStatus(parseFloat(inputVal)) === 'cheat' && !cheatDayInfo.available
+                                ? `Cheat day not available (${cheatDayInfo.inLockout ? `locked until day ${cheatDayInfo.nextCheatDay}` : `next one on day ${cheatDayInfo.nextCheatDay}`})`
+                                : habit.type === 'calories' && getCalorieStatus(parseFloat(inputVal)) === 'fail'
+                                ? `Over ${CONFIG.cheatDayCalorieMax.toLocaleString()} cal — exceeds cheat day limit`
+                                : habit.thresholdDir === 'gte' ? `Need at least ${habit.threshold.toLocaleString()}` : `Must be under ${habit.threshold.toLocaleString()}`}
+                            </div>
+                          )}
+
+                          {inputVal && isCheatDay && (
+                            <div className="mt-2 text-[11px] text-[var(--btc)] text-center">
+                              🎫 Cheat day — streak preserved, 0 sats for calories ({cheatDayInfo.totalEarned - cheatDayInfo.totalUsed - 1} remaining after this)
                             </div>
                           )}
 
@@ -323,8 +374,8 @@ export default function SatSlayer() {
                             onClick={() => handleSubmitHabit(habit.type)}
                             disabled={!meetsThreshold || isToggling}
                             className="w-full mt-3 py-3.5 rounded-2xl text-[14px] font-bold display tracking-wider transition-all active:scale-[0.98] disabled:opacity-25"
-                            style={meetsThreshold ? { background: `linear-gradient(135deg, ${habit.color}, ${habit.color}dd)`, color: '#000' } : { background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}>
-                            {isToggling ? 'LOGGING...' : meetsThreshold ? `LOG ${habit.label.toUpperCase()}` : `ENTER ${habit.unit.toUpperCase()}`}
+                            style={meetsThreshold ? { background: isCheatDay ? 'var(--bg-elevated)' : `linear-gradient(135deg, ${habit.color}, ${habit.color}dd)`, color: isCheatDay ? 'var(--btc)' : '#000', border: isCheatDay ? '1px solid var(--btc)' : 'none' } : { background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}>
+                            {isToggling ? 'LOGGING...' : isCheatDay ? '🎫 LOG CHEAT DAY' : meetsThreshold ? `LOG ${habit.label.toUpperCase()}` : `ENTER ${habit.unit.toUpperCase()}`}
                           </button>
                         </div>
                       )}

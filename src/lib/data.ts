@@ -15,6 +15,7 @@ export const CONFIG = {
   // Cheat day rules: 0 cheat days for first 30 days, then 1 every 30 days
   cheatDayLockoutDays: 30,
   cheatDayFrequency: 30,
+  cheatDayCalorieMax: 3500, // Max calories on a cheat day (above this = streak breaks)
 
   // Base sats per habit (before multiplier)
   baseSatsPerHabit: 500,
@@ -81,6 +82,24 @@ export function habitMet(type: HabitType, value: number): boolean {
   const habit = HABITS.find((h) => h.type === type)!;
   if (habit.thresholdDir === 'gte') return value >= habit.threshold;
   return value <= habit.threshold && value > 0; // lte but must have logged something
+}
+
+// Check calorie status: normal, cheat day, or fail
+export type CalorieStatus = 'normal' | 'cheat' | 'fail' | 'not_logged';
+export function getCalorieStatus(calories: number): CalorieStatus {
+  if (calories <= 0) return 'not_logged';
+  if (calories <= CONFIG.calorieTarget) return 'normal';
+  if (calories <= CONFIG.cheatDayCalorieMax) return 'cheat';
+  return 'fail';
+}
+
+// Check if calories count as "met" considering cheat days
+// For streak purposes: normal = met, cheat = met (if cheat day available), fail = not met
+export function caloriesMet(calories: number, cheatDayAvailable: boolean): boolean {
+  const status = getCalorieStatus(calories);
+  if (status === 'normal') return true;
+  if (status === 'cheat' && cheatDayAvailable) return true;
+  return false;
 }
 
 // ── CHEAT DAY LOGIC ──
