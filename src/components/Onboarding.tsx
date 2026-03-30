@@ -100,24 +100,39 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[300px] h-[300px] rounded-full opacity-20" style={{ background: 'radial-gradient(circle, var(--btc), transparent 70%)' }} />
 
         <div className="relative text-center max-w-sm">
-          <div className="flex justify-center mb-5">
-            <KettlebellLogo size={72} />
+          <div className="flex justify-center mb-6">
+            <KettlebellLogo size={80} />
           </div>
-          <h1 className="display text-4xl leading-tight mb-2" style={{ color: 'var(--btc)' }}>
+          <h1 className="display text-4xl leading-tight mb-4" style={{ color: 'var(--btc)' }}>
             PROOF OF WORK
           </h1>
-          <p className="text-[13px] text-[var(--text-secondary)] mb-1 tracking-wide">
-            mine bitcoin with your body
-          </p>
           <p className="text-[15px] text-[var(--text-secondary)] leading-relaxed mb-8 italic">
             &ldquo;I can do all things through Christ who strengthens me.&rdquo;
             <span className="block text-[12px] text-[var(--text-muted)] mt-1 not-italic">— Philippians 4:13</span>
           </p>
 
-          <div className="card p-5 mb-8 text-center">
-            <div className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] mb-2">Total bounty pool</div>
-            <div className="mono text-4xl text-[var(--btc)]">{formatSats(CONFIG.totalSats)}</div>
-            <div className="text-sm text-[var(--text-muted)] mt-1">sats · waiting for you</div>
+          <div className="card p-6 mb-4 text-center" style={{ borderColor: 'rgba(247,147,26,0.15)' }}>
+            <div className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] mb-2">Your bounty</div>
+            <div className="mono text-5xl text-[var(--btc)] leading-tight">{formatSats(CONFIG.totalSats)}</div>
+            <div className="text-[13px] text-[var(--text-muted)] mt-2">sats</div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 mb-8">
+            <div className="card p-3 text-center">
+              <div className="text-lg mb-1">📅</div>
+              <div className="mono text-[14px] font-semibold">{CONFIG.totalWeeks}</div>
+              <div className="text-[9px] text-[var(--text-muted)]">weeks</div>
+            </div>
+            <div className="card p-3 text-center">
+              <div className="text-lg mb-1">🎯</div>
+              <div className="mono text-[14px] font-semibold">{CONFIG.goalWeight}</div>
+              <div className="text-[9px] text-[var(--text-muted)]">kg goal</div>
+            </div>
+            <div className="card p-3 text-center">
+              <div className="text-lg mb-1">⚡</div>
+              <div className="mono text-[14px] font-semibold">4</div>
+              <div className="text-[9px] text-[var(--text-muted)]">daily habits</div>
+            </div>
           </div>
 
           {claimed ? (
@@ -160,11 +175,11 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
             <>
               <button
                 onClick={() => setStep(1)}
-                className="w-full py-4 rounded-2xl text-lg font-bold display tracking-wider bg-[var(--btc)] text-black active:scale-[0.98] transition-all"
+                className="w-full py-5 rounded-2xl text-lg font-bold display tracking-wider bg-[var(--btc)] text-black active:scale-[0.98] transition-all glow-btc"
               >
-                ACCEPT THE BOUNTY
+                ACCEPT THE CHALLENGE
               </button>
-              <p className="text-[10px] text-[var(--text-muted)] mt-3">{CONFIG.totalWeeks} weeks · 4 daily habits · unlimited potential</p>
+              <p className="text-[10px] text-[var(--text-muted)] mt-3">Sponsored by Clay · Paid in Bitcoin via Lightning</p>
             </>
           )}
         </div>
