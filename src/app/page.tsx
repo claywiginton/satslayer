@@ -58,6 +58,7 @@ export default function SatSlayer() {
   const [wiWeight, setWiWeight] = useState('');
   const [wiSaving, setWiSaving] = useState(false);
   const [wiResult, setWiResult] = useState<{ sats: number; milestones: string[] } | null>(null);
+  const [wiPhoto, setWiPhoto] = useState<string | null>(null);
   const [habitInputs, setHabitInputs] = useState<Record<HabitType, string>>({ steps: '', workout: '', calories: '', sugar: '' });
   const [weightUnit, setWeightUnit] = useState<WeightUnit>(CONFIG.defaultUnit);
   const [showTiers, setShowTiers] = useState(false);
@@ -135,15 +136,15 @@ export default function SatSlayer() {
     if (!wiWeight || wiSaving) return;
     setWiSaving(true);
     const inputKg = weightUnit === 'lbs' ? lbsToKg(parseFloat(wiWeight)) : parseFloat(wiWeight);
-    const result = await saveWeighIn(weekNumber, inputKg, lastWeight);
+    const result = await saveWeighIn(weekNumber, inputKg, lastWeight, wiPhoto || undefined);
     if (result.success) {
       setWiResult({ sats: result.satsEarned, milestones: result.milestonesHit });
       if (result.satsEarned > 0) fetch('/api/payout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: profile.strikeUsername, sats: result.satsEarned, reason: `Week ${weekNumber} weigh-in` }) }).catch(() => {});
-      // Notify sponsor of weigh-in
       const change = Math.round((inputKg - lastWeight) * 10) / 10;
       fetch('/api/telegram', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'weigh_in', data: { weight: inputKg, change, sats: result.satsEarned } }) }).catch(() => {});
       const [s, w] = await Promise.all([getPlayerStats(), getWeighIns()]);
       setStats(s); setWeighIns(w);
+      setWiPhoto(null);
     }
     setWiSaving(false);
   };
@@ -455,6 +456,28 @@ export default function SatSlayer() {
                   <input type="number" inputMode="decimal" step="0.1" placeholder={dw(lastWeight)} value={wiWeight} onChange={(e) => setWiWeight(e.target.value)}
                     className="w-full bg-[var(--bg)] border-2 border-[var(--border)] rounded-2xl px-5 py-4 text-[24px] mono text-center font-semibold focus:outline-none focus:border-[var(--btc)] transition-colors" />
 
+                  {/* Scale photo */}
+                  <div className="mt-4">
+                    <div className="text-[10px] font-semibold tracking-widest uppercase text-[var(--text-muted)] mb-2">📸 Photo of the scale</div>
+                    {wiPhoto ? (
+                      <div className="relative">
+                        <img src={wiPhoto} alt="Scale" className="w-full rounded-2xl border border-[var(--border)]" style={{ maxHeight: '200px', objectFit: 'cover' }} />
+                        <button onClick={() => setWiPhoto(null)} className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 text-white text-xs flex items-center justify-center">✕</button>
+                      </div>
+                    ) : (
+                      <label className="block w-full py-4 rounded-2xl border-2 border-dashed border-[var(--border)] text-center cursor-pointer active:scale-[0.98] transition-all hover:border-[var(--btc)]">
+                        <span className="text-[13px] text-[var(--text-muted)]">Tap to take a photo of your scale</span>
+                        <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = () => setWiPhoto(reader.result as string);
+                          reader.readAsDataURL(file);
+                        }} />
+                      </label>
+                    )}
+                  </div>
+
                   {/* Reward preview */}
                   {wiWeight && (() => {
                     const inputKg = weightUnit === 'lbs' ? lbsToKg(parseFloat(wiWeight)) : parseFloat(wiWeight);
@@ -473,10 +496,10 @@ export default function SatSlayer() {
                     );
                   })()}
 
-                  <button onClick={handleWeighIn} disabled={!wiWeight || wiSaving}
+                  <button onClick={handleWeighIn} disabled={!wiWeight || !wiPhoto || wiSaving}
                     className="w-full mt-4 py-4 rounded-2xl text-[14px] font-bold display tracking-wider text-black disabled:opacity-25 active:scale-[0.98] transition-all"
                     style={{ background: 'linear-gradient(135deg, var(--btc), #e8820e)' }}>
-                    {wiSaving ? 'SAVING...' : 'LOG WEIGH-IN'}
+                    {wiSaving ? 'SAVING...' : !wiPhoto ? 'TAKE SCALE PHOTO TO SUBMIT' : 'LOG WEIGH-IN'}
                   </button>
                 </div>
 

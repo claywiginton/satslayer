@@ -266,7 +266,7 @@ export async function getWeighIns(): Promise<WeighIn[]> {
   }));
 }
 
-export async function saveWeighIn(weekNumber: number, weight: number, previousWeight: number): Promise<{ success: boolean; satsEarned: number; milestonesHit: string[] }> {
+export async function saveWeighIn(weekNumber: number, weight: number, previousWeight: number, scalePhoto?: string): Promise<{ success: boolean; satsEarned: number; milestonesHit: string[] }> {
   // GUARDRAIL: check if already weighed in this week
   const { data: existingWeighIns } = await supabase
     .from('weigh_ins').select('id').eq('week_number', weekNumber).limit(1);
@@ -289,11 +289,14 @@ export async function saveWeighIn(weekNumber: number, weight: number, previousWe
   const totalSats = reward.totalSats + msSats;
   const change = Math.round((weight - previousWeight) * 10) / 10;
 
-  const { error } = await supabase.from('weigh_ins').insert({
+  const row: any = {
     week_number: weekNumber, date: getTodayStr(), weight,
     previous_weight: previousWeight, change, sats_earned: totalSats,
     milestones_hit: msNames,
-  });
+  };
+  if (scalePhoto) row.scale_photo = scalePhoto;
+
+  const { error } = await supabase.from('weigh_ins').insert(row);
 
   if (error) { console.error('Save weigh-in failed:', error); return { success: false, satsEarned: 0, milestonesHit: [] }; }
 
