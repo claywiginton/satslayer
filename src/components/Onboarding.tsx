@@ -5,7 +5,7 @@ import { CONFIG, formatSats, satsToUsd } from '@/lib/data';
 import KettlebellLogo from '@/components/KettlebellLogo';
 
 interface Props {
-  onComplete: (username: string, startWeight: number, telegramChatId?: string, startDate?: string) => Promise<void> | void;
+  onComplete: (username: string, startWeight: number, telegramChatId?: string, startDate?: string, startPhoto?: string) => Promise<void> | void;
   claimed?: boolean; // true if someone already onboarded
   onReset?: () => void;
 }
@@ -28,6 +28,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
   const [tgError, setTgError] = useState('');
   const [telegramChatId, setTelegramChatId] = useState('');
   const [startDate, setStartDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [startPhoto, setStartPhoto] = useState<string | null>(null);
 
   const handleReset = async () => {
     if (!adminPin) return;
@@ -82,7 +83,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
     const sw = parseFloat(startWeight) || CONFIG.startWeight;
     console.log('handleFinish called with:', username.trim().toLowerCase(), sw);
     try {
-      await onComplete(username.trim().toLowerCase(), sw, telegramChatId || undefined, startDate || undefined);
+      await onComplete(username.trim().toLowerCase(), sw, telegramChatId || undefined, startDate || undefined, startPhoto || undefined);
       console.log('onComplete finished successfully');
     } catch (e: any) {
       console.error('Finish error:', e);
@@ -231,6 +232,28 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
             </div>
 
             <div>
+              <label className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] block mb-2">📸 Day 1 progress photo</label>
+              {startPhoto ? (
+                <div className="relative">
+                  <img src={startPhoto} alt="Day 1" className="w-full rounded-xl border border-[var(--border)]" style={{ maxHeight: '200px', objectFit: 'cover' }} />
+                  <button onClick={() => setStartPhoto(null)} className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 text-white text-xs flex items-center justify-center">✕</button>
+                </div>
+              ) : (
+                <label className="block w-full py-4 rounded-xl border-2 border-dashed border-[var(--border)] text-center cursor-pointer active:scale-[0.98] transition-all hover:border-[var(--btc)]">
+                  <span className="text-[13px] text-[var(--text-muted)]">Tap to take your Day 1 photo</span>
+                  <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () => setStartPhoto(reader.result as string);
+                    reader.readAsDataURL(file);
+                  }} />
+                </label>
+              )}
+              <p className="text-[10px] text-[var(--text-muted)] mt-1.5">You&apos;ll look back at this — take it now</p>
+            </div>
+
+            <div>
               <label className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] block mb-2">Goal weight (kg)</label>
               <div className="w-full bg-[var(--bg-elevated)] border border-[var(--border)] rounded-xl px-4 py-3 text-base mono text-[var(--text-secondary)]">
                 {CONFIG.goalWeight} kg
@@ -239,20 +262,17 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
             </div>
 
             <div>
-              <label className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] block mb-2">Start date</label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-xl px-4 py-3 text-base mono focus:outline-none focus:border-[var(--btc)] [color-scheme:dark]"
-              />
-              <p className="text-[10px] text-[var(--text-muted)] mt-1.5">Challenge ends {CONFIG.totalWeeks} weeks from this date</p>
+              <label className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] block mb-2">Challenge</label>
+              <div className="w-full bg-[var(--bg-elevated)] border border-[var(--border)] rounded-xl px-4 py-3 text-base mono text-[var(--text-secondary)]">
+                {CONFIG.totalWeeks} weeks
+                <span className="text-[10px] text-[var(--text-muted)] ml-2">starting {startDate}</span>
+              </div>
             </div>
           </div>
 
           <button
-            onClick={() => verified && startWeight && startDate && setStep(2)}
-            disabled={!verified || !startWeight || !startDate}
+            onClick={() => verified && startWeight && startDate && startPhoto && setStep(2)}
+            disabled={!verified || !startWeight || !startDate || !startPhoto}
             className="w-full mt-6 py-4 rounded-2xl text-base font-bold display tracking-wider bg-[var(--btc)] text-black disabled:opacity-30 active:scale-[0.98] transition-all"
           >
             CONTINUE

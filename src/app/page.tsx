@@ -81,8 +81,8 @@ export default function SatSlayer() {
       });
   }, [profile]);
 
-  const handleOnboardingComplete = async (username: string, startWeight: number, telegramChatId?: string, startDate?: string) => {
-    const saved = await savePlayerProfile(username, startWeight, CONFIG.goalWeight, telegramChatId, startDate);
+  const handleOnboardingComplete = async (username: string, startWeight: number, telegramChatId?: string, startDate?: string, startPhoto?: string) => {
+    const saved = await savePlayerProfile(username, startWeight, CONFIG.goalWeight, telegramChatId, startDate, startPhoto);
     if (saved) {
       setProfile({ strikeUsername: username, startWeight, goalWeight: CONFIG.goalWeight, startDate: startDate || getTodayStr(), createdAt: new Date().toISOString() });
     } else {

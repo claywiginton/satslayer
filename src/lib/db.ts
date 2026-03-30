@@ -36,17 +36,20 @@ export async function savePlayerProfile(
   startWeight: number,
   goalWeight: number,
   telegramChatId?: string,
-  startDate?: string
+  startDate?: string,
+  startPhoto?: string
 ): Promise<boolean> {
   const date = startDate || getTodayStr();
-  console.log('savePlayerProfile: inserting', { strikeUsername, startWeight, goalWeight, start_date: date, telegramChatId });
-  const { data, error } = await supabase.from('player_profile').insert({
+  console.log('savePlayerProfile: inserting', { strikeUsername, startWeight, goalWeight, start_date: date, telegramChatId, hasPhoto: !!startPhoto });
+  const row: any = {
     strike_username: strikeUsername,
     start_weight: startWeight,
     goal_weight: goalWeight,
     start_date: date,
     telegram_chat_id: telegramChatId || null,
-  }).select();
+  };
+  if (startPhoto) row.start_photo = startPhoto;
+  const { data, error } = await supabase.from('player_profile').insert(row).select();
 
   console.log('savePlayerProfile result:', { data, error });
   if (error) { console.error('Save profile failed:', error.message, error.details, error.hint, error.code); return false; }
