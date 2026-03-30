@@ -467,7 +467,7 @@ export default function SatSlayer() {
                     ) : (
                       <label className="block w-full py-4 rounded-2xl border-2 border-dashed border-[var(--border)] text-center cursor-pointer active:scale-[0.98] transition-all hover:border-[var(--btc)]">
                         <span className="text-[13px] text-[var(--text-muted)]">Tap to take a photo of your scale</span>
-                        <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => {
+                        <input type="file" accept="image/*" className="hidden" onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (!file) return;
                           const reader = new FileReader();
