@@ -52,13 +52,14 @@ export function formatWeight(value: number, unit: WeightUnit): string {
   return `${value} kg`;
 }
 
-export type HabitType = 'steps' | 'workout' | 'calories';
+export type HabitType = 'steps' | 'workout' | 'calories' | 'sugar';
 export type StreakMode = 'daily' | 'weekly'; // daily = every day, weekly = X per calendar week
 
 export const HABITS: { type: HabitType; label: string; icon: string; description: string; color: string; inputType: 'number' | 'boolean'; unit: string; threshold: number; thresholdDir: 'gte' | 'lte'; streakMode: StreakMode; weeklyTarget?: number }[] = [
   { type: 'steps', label: 'Steps', icon: '👟', description: 'Hit 8,000 steps', color: '#22c55e', inputType: 'number', unit: 'steps', threshold: 8000, thresholdDir: 'gte', streakMode: 'daily' },
-  { type: 'workout', label: 'Workout', icon: '💪', description: '30+ min · 3× per week', color: '#f7931a', inputType: 'boolean', unit: '', threshold: 1, thresholdDir: 'gte', streakMode: 'weekly', weeklyTarget: 3 },
+  { type: 'workout', label: 'Exercise', icon: '💪', description: '30+ min · 3× per week', color: '#f7931a', inputType: 'boolean', unit: '', threshold: 1, thresholdDir: 'gte', streakMode: 'weekly', weeklyTarget: 3 },
   { type: 'calories', label: 'Calories', icon: '🍽', description: `Under ${CONFIG.calorieTarget.toLocaleString()} cal`, color: '#a855f7', inputType: 'number', unit: 'cal', threshold: CONFIG.calorieTarget, thresholdDir: 'lte', streakMode: 'daily' },
+  { type: 'sugar', label: 'No Sugar', icon: '🚫', description: 'No sugar today', color: '#ef4444', inputType: 'boolean', unit: '', threshold: 1, thresholdDir: 'gte', streakMode: 'daily' },
 ];
 
 export interface Milestone {
@@ -72,6 +73,7 @@ export interface DayLog {
   steps: number;      // actual step count (0 = not logged)
   workout: number;     // 1 = did it, 0 = didn't
   calories: number;    // actual calorie count (0 = not logged)
+  sugar: number;       // 1 = no sugar, 0 = not logged
 }
 
 // Check if a habit value meets the threshold

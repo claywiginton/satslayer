@@ -97,7 +97,7 @@ export function eveningReminderMessage(
 }
 
 export function weighInReminderMessage(weekNumber: number): string {
-  return `⚖️ <b>PROOF OF WORK — Weigh-in Time</b>\n\nWeek ${weekNumber}. Step on the scale.\n\n5,000 sats just for showing up. Lose weight and it pays even more.\n\nNo hiding from the number. That's the deal.`;
+  return `⚖️ <b>PROOF OF WORK — Monday Weigh-in</b>\n\nWeek ${weekNumber}. Step on the scale.\n\n5,000 sats just for showing up. Lose weight and it pays even more.\n\nNo hiding from the number. That's the deal.`;
 }
 
 export function streakWarningMessage(
@@ -123,7 +123,7 @@ export function milestoneAlertMessage(
 }
 
 export function allCompleteMessage(totalSats: number): string {
-  return `✅ <b>PROOF OF WORK</b>\n\nAll 3 habits logged. +${totalSats.toLocaleString()} sats.\n\n${randomLine(ALL_COMPLETE_LINES)}`;
+  return `✅ <b>PROOF OF WORK</b>\n\nAll habits logged. +${totalSats.toLocaleString()} sats.\n\n${randomLine(ALL_COMPLETE_LINES)}`;
 }
 
 // ── MORNING MOTIVATION ──
@@ -157,7 +157,7 @@ export function morningMotivationMessage(
   } else {
     msg += `💰 500 sats per habit today — start building that streak.\n`;
   }
-  msg += `\n3 habits. Get it done.\n\n✝️ <i>"I can do all things through Christ who strengthens me."</i> — Philippians 4:13`;
+  msg += `\n4 habits. Get it done.\n\n✝️ <i>"I can do all things through Christ who strengthens me."</i> — Philippians 4:13`;
   return msg;
 }
 
@@ -188,7 +188,7 @@ export function weeklySummaryMessage(data: {
     msg += `➡️ Weight maintained\n`;
   }
   msg += `\n🔥 Best streak: ${bestStreak}d (${bestMultiplier}×)\n`;
-  msg += `\nNew week starts now. Make it count.`;
+  msg += `\nNew week starts now. Make it count.\n\n📞 <i>Optional: Sunday call with Clay to review the week</i>`;
   return msg;
 }
 
@@ -205,7 +205,7 @@ export function sponsorHabitLoggedMessage(
 }
 
 export function sponsorAllCompleteMessage(playerName: string, totalSats: number): string {
-  return `✅ <b>${playerName}</b> completed all 3 habits today. +${totalSats.toLocaleString()} sats.`;
+  return `✅ <b>${playerName}</b> completed all habits today. +${totalSats.toLocaleString()} sats.`;
 }
 
 export function sponsorMissedDayMessage(playerName: string, missingHabits: string[], streaksAtRisk: string[]): string {

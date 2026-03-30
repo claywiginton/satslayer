@@ -10,7 +10,7 @@
     },
     {
       "path": "/api/cron?trigger=weighin",
-      "schedule": "0 7 * * 0"
+      "schedule": "0 7 * * 1"
     },
     {
       "path": "/api/cron?trigger=weekly_summary",

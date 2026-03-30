@@ -108,8 +108,9 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
           <p className="text-[13px] text-[var(--text-secondary)] mb-1 tracking-wide">
             mine bitcoin with your body
           </p>
-          <p className="text-sm text-[var(--text-muted)] leading-relaxed mb-8">
-            Eddy, this is your challenge. Complete daily habits. Build streaks. Earn sats. Miss a day and watch your multiplier reset.
+          <p className="text-[15px] text-[var(--text-secondary)] leading-relaxed mb-8 italic">
+            &ldquo;I can do all things through Christ who strengthens me.&rdquo;
+            <span className="block text-[12px] text-[var(--text-muted)] mt-1 not-italic">— Philippians 4:13</span>
           </p>
 
           <div className="card p-5 mb-8 text-center">
@@ -162,7 +163,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
               >
                 ACCEPT THE BOUNTY
               </button>
-              <p className="text-[10px] text-[var(--text-muted)] mt-3">{CONFIG.totalWeeks} weeks · 3 daily habits · unlimited potential</p>
+              <p className="text-[10px] text-[var(--text-muted)] mt-3">{CONFIG.totalWeeks} weeks · 4 daily habits · unlimited potential</p>
             </>
           )}
         </div>
@@ -350,7 +351,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
             {[0,1,2,3,4,5,6].map((i) => <div key={i} className="h-1 rounded-full w-5" style={{ background: i <= 3 ? 'var(--btc)' : 'var(--border)' }} />)}
           </div>
 
-          <h2 className="display text-2xl mb-2 text-center">3 DAILY HABITS</h2>
+          <h2 className="display text-2xl mb-2 text-center">4 DAILY HABITS</h2>
           <p className="text-sm text-[var(--text-muted)] text-center mb-6">Complete these every day to earn sats</p>
 
           <div className="space-y-3">
@@ -364,8 +365,8 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
             <div className="card p-4 flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ background: '#f7931a15' }}>💪</div>
               <div>
-                <div className="font-semibold">Workout 5×/Week</div>
-                <div className="text-xs text-[var(--text-muted)]">30+ min exercise, 5 days per week (Mon-Sun)</div>
+                <div className="font-semibold">Exercise 3×/Week</div>
+                <div className="text-xs text-[var(--text-muted)]">30+ min exercise, 3 days per week</div>
               </div>
             </div>
             <div className="card p-4 flex items-center gap-4">
@@ -375,10 +376,17 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
                 <div className="text-xs text-[var(--text-muted)]">Track it, stay under the line</div>
               </div>
             </div>
+            <div className="card p-4 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ background: '#ef444415' }}>🚫</div>
+              <div>
+                <div className="font-semibold">No Sugar</div>
+                <div className="text-xs text-[var(--text-muted)]">Zero added sugar — every single day</div>
+              </div>
+            </div>
           </div>
 
           <p className="text-xs text-[var(--text-secondary)] text-center mt-5 leading-relaxed">
-            Each habit earns sats independently. Complete all three every day for maximum earnings.
+            Each habit earns sats independently. Complete all four every day for maximum earnings.
           </p>
 
           <button onClick={() => setStep(4)} className="w-full mt-6 py-4 rounded-2xl text-base font-bold display tracking-wider bg-[var(--btc)] text-black active:scale-[0.98] transition-all">
@@ -567,8 +575,8 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
             {[0,1,2,3,4,5,6].map((i) => <div key={i} className="h-1 rounded-full w-5" style={{ background: 'var(--btc)' }} />)}
           </div>
 
-          <h2 className="display text-2xl mb-2 text-center">WEEKLY WEIGH-INS</h2>
-          <p className="text-sm text-[var(--text-muted)] text-center mb-6">Step on the scale once a week for bonus sats</p>
+          <h2 className="display text-2xl mb-2 text-center">MONDAY WEIGH-INS</h2>
+          <p className="text-sm text-[var(--text-muted)] text-center mb-6">Weigh in every Monday for bonus sats</p>
 
           <div className="card p-4 mb-4">
             <div className="space-y-2 text-sm">
@@ -603,6 +611,11 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
             <div className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] mb-2">Your bounty is funded</div>
             <div className="mono text-3xl text-[var(--btc)]">{formatSats(CONFIG.totalSats)} sats</div>
             <div className="text-sm text-[var(--text-muted)] mt-1">waiting for you</div>
+          </div>
+
+          <div className="card p-4 mb-6" style={{ background: 'var(--bg)' }}>
+            <div className="text-[10px] font-semibold tracking-widest uppercase text-[var(--btc)] mb-2">📞 Weekly check-in</div>
+            <p className="text-[12px] text-[var(--text-secondary)]">Optional call with Clay every Sunday to review the week, talk through struggles, and plan ahead. Not required — but it helps.</p>
           </div>
 
           {saveError && <p className="text-xs text-[var(--red)] text-center mb-3">{saveError}</p>}

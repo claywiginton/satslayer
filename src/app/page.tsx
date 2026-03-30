@@ -58,7 +58,7 @@ export default function SatSlayer() {
   const [wiWeight, setWiWeight] = useState('');
   const [wiSaving, setWiSaving] = useState(false);
   const [wiResult, setWiResult] = useState<{ sats: number; milestones: string[] } | null>(null);
-  const [habitInputs, setHabitInputs] = useState<Record<HabitType, string>>({ steps: '', workout: '', calories: '' });
+  const [habitInputs, setHabitInputs] = useState<Record<HabitType, string>>({ steps: '', workout: '', calories: '', sugar: '' });
   const [weightUnit, setWeightUnit] = useState<WeightUnit>(CONFIG.defaultUnit);
   const [showTiers, setShowTiers] = useState(false);
   const [satsLog, setSatsLog] = useState<{ date: string; habit: string; sats: number }[]>([]);
@@ -113,7 +113,7 @@ export default function SatSlayer() {
     setToggling(habit);
     const ok = await saveHabitValue(habit, value);
     if (ok) {
-      const updatedLog: DayLog = { date: getTodayStr(), steps: habit === 'steps' ? value : (todayLog?.steps || 0), workout: habit === 'workout' ? value : (todayLog?.workout || 0), calories: habit === 'calories' ? value : (todayLog?.calories || 0) };
+      const updatedLog: DayLog = { date: getTodayStr(), steps: habit === 'steps' ? value : (todayLog?.steps || 0), workout: habit === 'workout' ? value : (todayLog?.workout || 0), calories: habit === 'calories' ? value : (todayLog?.calories || 0), sugar: habit === 'sugar' ? value : (todayLog?.sugar || 0) };
       const streakData = calculateStreaks([...dayLogs.filter(d => d.date !== getTodayStr()), updatedLog]);
       const sats = getSatsForHabit(streakData[habit].current);
       await logSats(getTodayStr(), habit, sats);
@@ -189,17 +189,17 @@ export default function SatSlayer() {
             <div className="flex items-center justify-between mb-5">
               <div>
                 <div className="display text-[20px]">Day {dayNumber}</div>
-                <div className="text-[11px] text-[var(--text-muted)] mt-0.5">Week {weekNumber} · {todayCount}/3 complete</div>
+                <div className="text-[11px] text-[var(--text-muted)] mt-0.5">Week {weekNumber} · {todayCount}/{HABITS.length} complete</div>
               </div>
               {/* Mini completion ring */}
               <div className="relative w-14 h-14">
                 <svg className="w-14 h-14 -rotate-90" viewBox="0 0 56 56">
                   <circle cx="28" cy="28" r="24" fill="none" stroke="var(--border)" strokeWidth="3" />
                   <circle cx="28" cy="28" r="24" fill="none" stroke={todayComplete ? 'var(--green)' : 'var(--btc)'} strokeWidth="3"
-                    strokeDasharray={`${(todayCount / 3) * 150.8} 150.8`} strokeLinecap="round" className="transition-all duration-700" />
+                    strokeDasharray={`${(todayCount / HABITS.length) * 150.8} 150.8`} strokeLinecap="round" className="transition-all duration-700" />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="mono text-[13px] font-bold" style={{ color: todayComplete ? 'var(--green)' : 'var(--btc)' }}>{todayCount}/3</span>
+                  <span className="mono text-[13px] font-bold" style={{ color: todayComplete ? 'var(--green)' : 'var(--btc)' }}>{todayCount}/{HABITS.length}</span>
                 </div>
               </div>
             </div>
@@ -291,7 +291,7 @@ export default function SatSlayer() {
                       {completed && (
                         <div className="mt-3 py-2.5 px-4 rounded-xl text-center" style={{ background: 'rgba(52,211,153,0.06)' }}>
                           <span className="mono text-[13px] text-[var(--green)]">
-                            {habit.type === 'steps' ? `${todayVal.toLocaleString()} steps logged` : habit.type === 'calories' ? `${todayVal.toLocaleString()} cal logged` : 'Workout complete'}
+                            {habit.type === 'steps' ? `${todayVal.toLocaleString()} steps logged` : habit.type === 'calories' ? `${todayVal.toLocaleString()} cal logged` : habit.type === 'sugar' ? 'No sugar today ✅' : 'Exercise complete'}
                           </span>
                         </div>
                       )}
@@ -340,7 +340,7 @@ export default function SatSlayer() {
                             disabled={isToggling}
                             className="w-full mt-4 py-4 rounded-2xl text-[15px] font-bold display tracking-wider text-black active:scale-[0.98] transition-all disabled:opacity-40"
                             style={{ background: `linear-gradient(135deg, ${habit.color}, ${habit.color}cc)` }}>
-                            {isToggling ? 'LOGGING...' : "YES — I WORKED OUT 💪"}
+                            {isToggling ? 'LOGGING...' : habit.type === 'sugar' ? "NO SUGAR TODAY ✅" : "YES — I EXERCISED 💪"}
                           </button>
                         )
                       )}

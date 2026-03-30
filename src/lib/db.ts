@@ -67,6 +67,7 @@ export async function getDayLogs(): Promise<DayLog[]> {
     steps: Number(d.steps) || 0,
     workout: Number(d.workout) || 0,
     calories: Number(d.calories) || 0,
+    sugar: Number(d.sugar) || 0,
   }));
 }
 
@@ -80,7 +81,7 @@ export async function getTodayLog(): Promise<DayLog | null> {
 
   if (error || !data || data.length === 0) return null;
   const d = data[0];
-  return { date: d.date, steps: Number(d.steps) || 0, workout: Number(d.workout) || 0, calories: Number(d.calories) || 0 };
+  return { date: d.date, steps: Number(d.steps) || 0, workout: Number(d.workout) || 0, calories: Number(d.calories) || 0, sugar: Number(d.sugar) || 0 };
 }
 
 export async function saveHabitValue(habit: HabitType, value: number): Promise<boolean> {
@@ -101,7 +102,7 @@ export async function saveHabitValue(habit: HabitType, value: number): Promise<b
       .eq('date', today);
     if (error) { console.error('Update habit failed:', error); return false; }
   } else {
-    const row: any = { date: today, steps: 0, workout: 0, calories: 0 };
+    const row: any = { date: today, steps: 0, workout: 0, calories: 0, sugar: 0 };
     row[habit] = value;
     const { error } = await supabase.from('day_logs').insert(row);
     if (error) { console.error('Insert day_log failed:', error); return false; }
@@ -323,7 +324,7 @@ export async function getPlayerStats(): Promise<PlayerStats> {
   const currentWeight = latestWeighIn ? latestWeighIn.weight : CONFIG.startWeight;
   const hitMilestones = await getHitMilestones();
 
-  const streaks: HabitStreak[] = (['steps', 'workout', 'calories'] as HabitType[]).map((type) => {
+  const streaks: HabitStreak[] = (['steps', 'workout', 'calories', 'sugar'] as HabitType[]).map((type) => {
     const s = streakData[type];
     return {
       type,
@@ -334,7 +335,7 @@ export async function getPlayerStats(): Promise<PlayerStats> {
     };
   });
 
-  const daysWithAnyHabit = dayLogs.filter((d) => d.steps > 0 || d.workout > 0 || d.calories > 0).length;
+  const daysWithAnyHabit = dayLogs.filter((d) => d.steps > 0 || d.workout > 0 || d.calories > 0 || d.sugar > 0).length;
 
   return {
     totalSatsEarned: totalSatsFromLog,
