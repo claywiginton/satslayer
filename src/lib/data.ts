@@ -181,9 +181,23 @@ export function getNextTier(streakDays: number): { daysUntil: number; nextMultip
 // ── DATE HELPERS ──
 
 export function getDayNumber(date?: string, customStartDate?: string): number {
-  const start = new Date(customStartDate || CONFIG.startDate);
-  const now = date ? new Date(date) : new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Berlin' }));
-  const diff = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+  // Parse both dates as local date components to avoid UTC timezone skew
+  const startStr = customStartDate || CONFIG.startDate;
+  const [sy, sm, sd] = startStr.split('-').map(Number);
+  const startMs = new Date(sy, sm - 1, sd).getTime();
+
+  let nowMs: number;
+  if (date) {
+    const [ny, nm, nd] = date.split('-').map(Number);
+    nowMs = new Date(ny, nm - 1, nd).getTime();
+  } else {
+    // Get today in Germany as a clean date (no time component)
+    const todayStr = getTodayStr();
+    const [ny, nm, nd] = todayStr.split('-').map(Number);
+    nowMs = new Date(ny, nm - 1, nd).getTime();
+  }
+
+  const diff = Math.floor((nowMs - startMs) / (1000 * 60 * 60 * 24));
   return Math.max(1, diff + 1);
 }
 
@@ -192,16 +206,19 @@ export function getWeekNumber(date?: string, customStartDate?: string): number {
 }
 
 export function getDateForDay(dayNumber: number): string {
-  const start = new Date(CONFIG.startDate);
+  const [sy, sm, sd] = CONFIG.startDate.split('-').map(Number);
+  const start = new Date(sy, sm - 1, sd);
   start.setDate(start.getDate() + dayNumber - 1);
-  return start.toISOString().split('T')[0];
+  const mm = String(start.getMonth() + 1).padStart(2, '0');
+  const dd = String(start.getDate()).padStart(2, '0');
+  return `${start.getFullYear()}-${mm}-${dd}`;
 }
 
 export function getTodayStr(): string {
   // Use Germany timezone for day boundaries
   const now = new Date();
-  const germany = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Berlin' }));
-  return germany.toISOString().split('T')[0];
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+  return parts; // Returns YYYY-MM-DD format
 }
 
 // ── WEIGH-IN CALC ──
