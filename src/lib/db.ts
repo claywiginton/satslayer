@@ -117,12 +117,16 @@ export async function saveHabitValue(habit: HabitType, value: number): Promise<b
 
 // Helper: get ISO week start (Monday) for a date
 function getWeekStart(dateStr: string): string {
-  const d = new Date(dateStr);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday
-  const monday = new Date(d);
+  // Parse as local date parts to avoid UTC timezone shifts
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(y, m - 1, d); // local date
+  const day = date.getDay();
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1); // Monday
+  const monday = new Date(date);
   monday.setDate(diff);
-  return monday.toISOString().split('T')[0];
+  const mm = String(monday.getMonth() + 1).padStart(2, '0');
+  const dd = String(monday.getDate()).padStart(2, '0');
+  return `${monday.getFullYear()}-${mm}-${dd}`;
 }
 
 export function calculateStreaks(logs: DayLog[]): Record<HabitType, { current: number; longest: number }> {
@@ -208,9 +212,11 @@ export function calculateStreaks(logs: DayLog[]): Record<HabitType, { current: n
 
       // Verify current streak: this week or last week must have met target
       const thisWeekStart = getWeekStart(today);
-      const lastWeekDate = new Date(thisWeekStart);
-      lastWeekDate.setDate(lastWeekDate.getDate() - 7);
-      const lastWeekStart = lastWeekDate.toISOString().split('T')[0];
+      const [ly, lm, ld] = thisWeekStart.split('-').map(Number);
+      const lastWeekDate = new Date(ly, lm - 1, ld - 7);
+      const lmm = String(lastWeekDate.getMonth() + 1).padStart(2, '0');
+      const ldd = String(lastWeekDate.getDate()).padStart(2, '0');
+      const lastWeekStart = `${lastWeekDate.getFullYear()}-${lmm}-${ldd}`;
 
       const thisWeekCount = weekMap[thisWeekStart] || 0;
       const lastWeekCount = weekMap[lastWeekStart] || 0;
