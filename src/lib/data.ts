@@ -215,10 +215,14 @@ export function getDateForDay(dayNumber: number): string {
 }
 
 export function getTodayStr(): string {
-  // Use Germany timezone for day boundaries
+  // Use Germany timezone for day boundaries — robust across all browsers
   const now = new Date();
-  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
-  return parts; // Returns YYYY-MM-DD format
+  const formatter = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit' });
+  const parts = formatter.formatToParts(now);
+  const y = parts.find(p => p.type === 'year')!.value;
+  const m = parts.find(p => p.type === 'month')!.value;
+  const d = parts.find(p => p.type === 'day')!.value;
+  return `${y}-${m}-${d}`;
 }
 
 // ── WEIGH-IN CALC ──
