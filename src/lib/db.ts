@@ -142,14 +142,22 @@ export function calculateStreaks(logs: DayLog[]): Record<HabitType, { current: n
       let longest = 0;
       let current = 0;
 
-      for (let i = 0; i < sorted.length; i++) {
-        const completed = habitMet(habit, sorted[i][habit]);
+      // Filter out today's row if this habit hasn't been logged yet (row exists from other habits)
+      const relevantLogs = sorted.filter(log => {
+        if (log.date === today && !habitMet(habit, log[habit]) && log[habit] === 0) return false;
+        return true;
+      });
+
+      for (let i = 0; i < relevantLogs.length; i++) {
+        const completed = habitMet(habit, relevantLogs[i][habit]);
         if (completed) {
           if (i === 0) {
             current = 1;
           } else {
-            const prevDate = new Date(sorted[i - 1].date);
-            const currDate = new Date(sorted[i].date);
+            const [py, pm, pd] = relevantLogs[i - 1].date.split('-').map(Number);
+            const [cy, cm, cd] = relevantLogs[i].date.split('-').map(Number);
+            const prevDate = new Date(py, pm - 1, pd);
+            const currDate = new Date(cy, cm - 1, cd);
             const diffDays = Math.round((currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24));
             current = diffDays === 1 ? current + 1 : 1;
           }
@@ -160,10 +168,12 @@ export function calculateStreaks(logs: DayLog[]): Record<HabitType, { current: n
       }
 
       // Verify streak is connected to today or yesterday
-      if (sorted.length > 0) {
-        const lastLog = sorted[sorted.length - 1];
-        const lastDate = new Date(lastLog.date);
-        const todayDate = new Date(today);
+      if (relevantLogs.length > 0) {
+        const lastLog = relevantLogs[relevantLogs.length - 1];
+        const [ly, lm, ld] = lastLog.date.split('-').map(Number);
+        const [ty, tm, td] = today.split('-').map(Number);
+        const lastDate = new Date(ly, lm - 1, ld);
+        const todayDate = new Date(ty, tm - 1, td);
         const diffFromToday = Math.round((todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
         if (diffFromToday > 1 || !habitMet(habit, lastLog[habit])) {
           current = 0;
