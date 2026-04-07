@@ -731,6 +731,90 @@ export default function SatSlayer() {
                 )}
               </div>
             )}
+
+            {/* Deep insights */}
+            {dayLogs.length > 0 && (
+              <div className="card p-5">
+                <div className="text-[9px] font-semibold tracking-widest uppercase text-[var(--text-muted)] mb-4">This week&apos;s insights</div>
+                {(() => {
+                  const todayStr = getTodayStr();
+                  // Get this week's logs (Mon-Sun)
+                  const now = new Date();
+                  const dow = now.getDay();
+                  const monOffset = dow === 0 ? -6 : 1 - dow;
+                  const monday = new Date(now);
+                  monday.setDate(now.getDate() + monOffset);
+                  const monStr = `${monday.getFullYear()}-${String(monday.getMonth()+1).padStart(2,'0')}-${String(monday.getDate()).padStart(2,'0')}`;
+                  const weekLogs = dayLogs.filter(d => d.date >= monStr && d.date <= todayStr);
+                  const daysWithCal = weekLogs.filter(d => d.calories > 0);
+                  const avgCalories = daysWithCal.length > 0 ? Math.round(daysWithCal.reduce((s, d) => s + d.calories, 0) / daysWithCal.length) : 0;
+                  const avgSteps = weekLogs.filter(d => d.steps > 0).length > 0 ? Math.round(weekLogs.filter(d => d.steps > 0).reduce((s, d) => s + d.steps, 0) / weekLogs.filter(d => d.steps > 0).length) : 0;
+
+                  // Estimate TDEE based on weight (~22 cal/kg for moderately active)
+                  const currentWeight = stats?.currentWeight || profile.startWeight;
+                  const estimatedTDEE = Math.round(currentWeight * 22);
+                  const dailyDeficit = avgCalories > 0 ? estimatedTDEE - avgCalories : 0;
+                  const weeklyDeficit = dailyDeficit * 7;
+                  const projectedWeeklyLoss = weeklyDeficit > 0 ? Math.round((weeklyDeficit / 7700) * 10) / 10 : 0; // 7700 cal = 1kg fat
+
+                  // Weight to go
+                  const weightToGo = Math.round((currentWeight - profile.goalWeight) * 10) / 10;
+                  const weeksToGo = projectedWeeklyLoss > 0 ? Math.round(weightToGo / projectedWeeklyLoss) : 0;
+
+                  return (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <div className="py-3 px-3.5 rounded-xl" style={{ background: 'var(--bg)' }}>
+                          <div className="text-[9px] text-[var(--text-muted)] uppercase tracking-widest">Avg calories</div>
+                          <div className="mono text-[18px] font-semibold mt-1">{avgCalories > 0 ? avgCalories.toLocaleString() : '—'}</div>
+                          <div className="text-[9px] mt-0.5" style={{ color: avgCalories > 0 && avgCalories <= CONFIG.calorieTarget ? 'var(--green)' : 'var(--text-muted)' }}>
+                            {avgCalories > 0 ? `${avgCalories <= CONFIG.calorieTarget ? '✓' : '✗'} target: ${CONFIG.calorieTarget.toLocaleString()}` : 'this week'}
+                          </div>
+                        </div>
+                        <div className="py-3 px-3.5 rounded-xl" style={{ background: 'var(--bg)' }}>
+                          <div className="text-[9px] text-[var(--text-muted)] uppercase tracking-widest">Avg steps</div>
+                          <div className="mono text-[18px] font-semibold mt-1">{avgSteps > 0 ? avgSteps.toLocaleString() : '—'}</div>
+                          <div className="text-[9px] mt-0.5" style={{ color: avgSteps >= 8000 ? 'var(--green)' : 'var(--text-muted)' }}>
+                            {avgSteps > 0 ? `${avgSteps >= 8000 ? '✓' : '✗'} target: 8,000` : 'this week'}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="py-3 px-3.5 rounded-xl" style={{ background: 'var(--bg)' }}>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="text-[9px] text-[var(--text-muted)] uppercase tracking-widest">Est. daily deficit</div>
+                            <div className="mono text-[18px] font-semibold mt-1" style={{ color: dailyDeficit > 0 ? 'var(--green)' : 'var(--red)' }}>
+                              {dailyDeficit > 0 ? `−${dailyDeficit}` : dailyDeficit === 0 ? '—' : `+${Math.abs(dailyDeficit)}`} <span className="text-[11px] text-[var(--text-muted)]">cal/day</span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-[9px] text-[var(--text-muted)] uppercase tracking-widest">Projected loss</div>
+                            <div className="mono text-[18px] font-semibold mt-1" style={{ color: projectedWeeklyLoss > 0 ? 'var(--green)' : 'var(--text-muted)' }}>
+                              {projectedWeeklyLoss > 0 ? `${projectedWeeklyLoss}` : '—'} <span className="text-[11px] text-[var(--text-muted)]">{wu}/week</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-[9px] text-[var(--text-muted)] mt-2">Based on estimated TDEE of ~{estimatedTDEE.toLocaleString()} cal at {dw(currentWeight)} {wu}</div>
+                      </div>
+
+                      <div className="py-3 px-3.5 rounded-xl" style={{ background: 'var(--bg)' }}>
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <div className="text-[9px] text-[var(--text-muted)] uppercase tracking-widest">To goal</div>
+                            <div className="mono text-[16px] font-semibold mt-1">{dw(weightToGo)} {wu}</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-[9px] text-[var(--text-muted)] uppercase tracking-widest">At this pace</div>
+                            <div className="mono text-[16px] font-semibold mt-1">{weeksToGo > 0 ? `~${weeksToGo} weeks` : '—'}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
           </div>
         )}
       </main>
