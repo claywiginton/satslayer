@@ -63,6 +63,15 @@ export default function SatSlayer() {
   const [weightUnit, setWeightUnit] = useState<WeightUnit>(CONFIG.defaultUnit);
   const [showTiers, setShowTiers] = useState(false);
   const [satsLog, setSatsLog] = useState<{ date: string; habit: string; sats: number }[]>([]);
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    if (typeof window !== 'undefined') return (localStorage.getItem('pow-theme') as 'dark' | 'light') || 'dark';
+    return 'dark';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('pow-theme', theme);
+  }, [theme]);
 
   const dw = (kg: number) => `${Math.round((weightUnit === 'lbs' ? kgToLbs(kg) : kg) * 10) / 10}`;
   const wu = weightUnit;
@@ -199,6 +208,10 @@ export default function SatSlayer() {
             <button onClick={() => setWeightUnit(wu === 'kg' ? 'lbs' : 'kg')}
               className="text-[10px] mono px-2 py-1 rounded-md border border-[var(--border)] text-[var(--text-muted)] active:scale-95 transition-all">
               {wu.toUpperCase()}
+            </button>
+            <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="text-[13px] w-7 h-7 rounded-md border border-[var(--border)] flex items-center justify-center active:scale-95 transition-all">
+              {theme === 'dark' ? '☀️' : '🌙'}
             </button>
           </div>
         </div>
