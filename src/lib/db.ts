@@ -184,7 +184,9 @@ export function calculateStreaks(logs: DayLog[]): Record<HabitType, { current: n
 
     } else {
       // ── WEEKLY STREAK: need X completions per calendar week (Mon-Sun) ──
-      const weeklyTarget = habitConfig.weeklyTarget || 5;
+      // A week counts as complete the MOMENT the target is hit (e.g., 3 workouts by Wednesday = done)
+      // Streak carries forward from last week if this week hasn't ended yet
+      const weeklyTarget = habitConfig.weeklyTarget || 3;
 
       // Group logs by week (Mon-Sun)
       const weekMap: Record<string, number> = {};
@@ -195,54 +197,52 @@ export function calculateStreaks(logs: DayLog[]): Record<HabitType, { current: n
         }
       }
 
-      // Get all week starts in order
-      const weekKeys = Object.keys(weekMap).sort();
-
-      // Calculate consecutive weeks that met the target
-      let longest = 0;
-      let current = 0;
-
-      for (let i = 0; i < weekKeys.length; i++) {
-        const metTarget = weekMap[weekKeys[i]] >= weeklyTarget;
-        if (metTarget) {
-          if (i === 0) {
-            current = 1;
-          } else {
-            // Check if this is the consecutive next week
-            const prevWeek = new Date(weekKeys[i - 1]);
-            const currWeek = new Date(weekKeys[i]);
-            const diffDays = Math.round((currWeek.getTime() - prevWeek.getTime()) / (1000 * 60 * 60 * 24));
-            current = diffDays === 7 ? current + 1 : 1;
-          }
-          longest = Math.max(longest, current);
-        } else {
-          current = 0;
-        }
-      }
-
-      // Verify current streak: this week or last week must have met target
       const thisWeekStart = getWeekStart(today);
-      const [ly, lm, ld] = thisWeekStart.split('-').map(Number);
-      const lastWeekDate = new Date(ly, lm - 1, ld - 7);
-      const lmm = String(lastWeekDate.getMonth() + 1).padStart(2, '0');
-      const ldd = String(lastWeekDate.getDate()).padStart(2, '0');
-      const lastWeekStart = `${lastWeekDate.getFullYear()}-${lmm}-${ldd}`;
 
-      const thisWeekCount = weekMap[thisWeekStart] || 0;
-      const lastWeekCount = weekMap[lastWeekStart] || 0;
-
-      // Current week is still in progress — check if last completed week was recent
-      if (weekKeys.length > 0) {
-        const lastCompletedWeek = weekKeys[weekKeys.length - 1];
-        if (lastCompletedWeek !== thisWeekStart && lastCompletedWeek !== lastWeekStart) {
-          current = 0;
-        } else if (lastCompletedWeek === lastWeekStart && lastWeekCount < weeklyTarget) {
-          current = 0;
+      // Build a list of ALL weeks from the first log to this week
+      const allWeeks: string[] = [];
+      if (Object.keys(weekMap).length > 0) {
+        const firstWeek = Object.keys(weekMap).sort()[0];
+        const [fy, fm, fd] = firstWeek.split('-').map(Number);
+        let cursor = new Date(fy, fm - 1, fd);
+        const [ty, tm, td] = thisWeekStart.split('-').map(Number);
+        const thisWeekDate = new Date(ty, tm - 1, td);
+        while (cursor <= thisWeekDate) {
+          const mm = String(cursor.getMonth() + 1).padStart(2, '0');
+          const dd = String(cursor.getDate()).padStart(2, '0');
+          allWeeks.push(`${cursor.getFullYear()}-${mm}-${dd}`);
+          cursor.setDate(cursor.getDate() + 7);
         }
       }
+
+      // Count consecutive completed weeks backwards from the most recent
+      let current = 0;
+      let longest = 0;
+      let tempStreak = 0;
+
+      for (let i = 0; i < allWeeks.length; i++) {
+        const weekKey = allWeeks[i];
+        const count = weekMap[weekKey] || 0;
+        const isThisWeek = weekKey === thisWeekStart;
+
+        if (count >= weeklyTarget) {
+          // Week is complete (target met)
+          tempStreak++;
+          longest = Math.max(longest, tempStreak);
+        } else if (isThisWeek) {
+          // This week is still in progress — don't break the streak
+          // (streak carries forward from previous weeks)
+          longest = Math.max(longest, tempStreak);
+        } else {
+          // Past week that didn't meet target — streak broken
+          tempStreak = 0;
+        }
+      }
+
+      // Current streak = tempStreak (includes completed weeks up to now)
+      current = tempStreak;
 
       // Convert weekly streak to "days" equivalent for the multiplier (weeks × 7)
-      // This way the multiplier tiers work the same
       result[habit] = { current: current * 7, longest: longest * 7 };
     }
   }
