@@ -240,24 +240,60 @@ export default function SatSlayer() {
             )}
 
             {/* Pace tracker */}
-            <div className="card p-4 mb-5">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-semibold tracking-widest uppercase text-[var(--text-muted)]">Bounty progress</span>
-                <span className="mono text-[11px] text-[var(--btc)]">{Math.round(((stats?.totalSatsEarned || 0) / CONFIG.totalSats) * 100)}%</span>
-              </div>
-              <div className="h-[6px] bg-[var(--bg)] rounded-full overflow-hidden mb-2">
-                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(((stats?.totalSatsEarned || 0) / CONFIG.totalSats) * 100, 100)}%`, background: 'linear-gradient(90deg, var(--btc), #e8820e)' }} />
-              </div>
-              <div className="flex justify-between text-[10px] text-[var(--text-muted)]">
-                <span className="mono">{formatSats(stats?.totalSatsEarned || 0)} earned</span>
-                <span className="mono">{formatSats(CONFIG.totalSats)} total</span>
-              </div>
-              {stats && stats.totalSatsEarned > 0 && dayNumber > 1 && (
-                <div className="text-[10px] text-[var(--text-muted)] text-center mt-2">
-                  Pace: ~{formatSats(Math.round((stats.totalSatsEarned / dayNumber) * 7))} sats/week · projected total: {formatSats(Math.min(Math.round((stats.totalSatsEarned / dayNumber) * CONFIG.totalWeeks * 7), CONFIG.totalSats))}
+            {(() => {
+              // Calculate max possible sats through today assuming perfect completion
+              let maxPossible = 0;
+              for (let d = 1; d <= dayNumber; d++) {
+                // Daily habits: steps, calories, sugar (every day)
+                const dailySats = getSatsForHabit(d); // perfect streak = day number
+                maxPossible += dailySats * 3; // 3 daily habits
+                // Exercise: 3 per week, so on ~3/7 of days
+                // Simpler: each workout earns sats at the weekly streak level
+              }
+              // Exercise: for each completed week, 3 workouts at the streak multiplier
+              const completedWeeks = Math.floor((dayNumber - 1) / 7);
+              const daysInCurrentWeek = ((dayNumber - 1) % 7) + 1;
+              const workoutsThisWeekMax = Math.min(daysInCurrentWeek, 3);
+              for (let w = 0; w < completedWeeks; w++) {
+                const weekStreakDays = (w + 1) * 7;
+                const satsPerWorkout = getSatsForHabit(weekStreakDays);
+                maxPossible += satsPerWorkout * 3;
+              }
+              // Current week workouts (partial)
+              if (workoutsThisWeekMax > 0) {
+                const weekStreakDays = (completedWeeks + 1) * 7;
+                maxPossible += getSatsForHabit(weekStreakDays) * workoutsThisWeekMax;
+              }
+              // Weigh-ins: one per week that's passed (10k each)
+              const weighInWeeks = Math.max(0, completedWeeks + (daysInCurrentWeek >= 1 ? 1 : 0));
+              maxPossible += weighInWeeks * CONFIG.weighInPayout;
+
+              const earned = stats?.totalSatsEarned || 0;
+              const pct = maxPossible > 0 ? Math.round((earned / maxPossible) * 100) : 100;
+              const pctColor = pct >= 90 ? 'var(--green)' : pct >= 70 ? 'var(--btc)' : 'var(--red)';
+
+              return (
+                <div className="card p-4 mb-5">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-semibold tracking-widest uppercase text-[var(--text-muted)]">Bounty progress</span>
+                    <span className="mono text-[11px] text-[var(--btc)]">{Math.round((earned / CONFIG.totalSats) * 100)}% of total</span>
+                  </div>
+                  <div className="h-[6px] bg-[var(--bg)] rounded-full overflow-hidden mb-2">
+                    <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min((earned / CONFIG.totalSats) * 100, 100)}%`, background: 'linear-gradient(90deg, var(--btc), #e8820e)' }} />
+                  </div>
+                  <div className="flex justify-between text-[10px] text-[var(--text-muted)]">
+                    <span className="mono">{formatSats(earned)} earned</span>
+                    <span className="mono">{formatSats(CONFIG.totalSats)} total</span>
+                  </div>
+                  {dayNumber > 1 && (
+                    <div className="mt-3 py-2 px-3 rounded-xl text-center" style={{ background: pct >= 90 ? 'rgba(52,211,153,0.06)' : pct >= 70 ? 'rgba(247,147,26,0.06)' : 'rgba(248,113,113,0.06)' }}>
+                      <span className="mono text-[13px] font-bold" style={{ color: pctColor }}>{pct}%</span>
+                      <span className="text-[10px] text-[var(--text-muted)] ml-1.5">of possible sats earned</span>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              );
+            })()}
 
             {/* Habit cards — each is its own big card */}
             <div className="space-y-3 mb-6">
