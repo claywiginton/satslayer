@@ -241,35 +241,40 @@ export default function SatSlayer() {
 
             {/* Pace tracker */}
             {(() => {
-              // Calculate max possible sats through today assuming perfect completion
-              let maxPossible = 0;
-              for (let d = 1; d <= dayNumber; d++) {
-                // Daily habits: steps, calories, sugar (every day)
-                const dailySats = getSatsForHabit(d); // perfect streak = day number
-                maxPossible += dailySats * 3; // 3 daily habits
-                // Exercise: 3 per week, so on ~3/7 of days
-                // Simpler: each workout earns sats at the weekly streak level
-              }
-              // Exercise: for each completed week, 3 workouts at the streak multiplier
-              const completedWeeks = Math.floor((dayNumber - 1) / 7);
-              const daysInCurrentWeek = ((dayNumber - 1) % 7) + 1;
-              const workoutsThisWeekMax = Math.min(daysInCurrentWeek, 3);
-              for (let w = 0; w < completedWeeks; w++) {
-                const weekStreakDays = (w + 1) * 7;
-                const satsPerWorkout = getSatsForHabit(weekStreakDays);
-                maxPossible += satsPerWorkout * 3;
-              }
-              // Current week workouts (partial)
-              if (workoutsThisWeekMax > 0) {
-                const weekStreakDays = (completedWeeks + 1) * 7;
-                maxPossible += getSatsForHabit(weekStreakDays) * workoutsThisWeekMax;
-              }
-              // Weigh-ins: one per week that's passed (10k each)
-              const weighInWeeks = Math.max(0, completedWeeks + (daysInCurrentWeek >= 1 ? 1 : 0));
-              maxPossible += weighInWeeks * CONFIG.weighInPayout;
-
               const earned = stats?.totalSatsEarned || 0;
-              const pct = maxPossible > 0 ? Math.round((earned / maxPossible) * 100) : 100;
+              
+              // Calculate max possible sats through YESTERDAY (today is still in progress)
+              const yesterdayDayNum = dayNumber - 1;
+              let maxPossible = 0;
+              
+              if (yesterdayDayNum >= 1) {
+                // Daily habits (steps, calories, sugar): every day, perfect streak
+                for (let d = 1; d <= yesterdayDayNum; d++) {
+                  maxPossible += getSatsForHabit(d) * 3; // 3 daily habits
+                }
+                // Exercise: 3 workouts per week, each earns sats
+                // Perfect player does exactly 3 per week
+                const fullWeeks = Math.floor(yesterdayDayNum / 7);
+                const extraDays = yesterdayDayNum % 7;
+                for (let w = 0; w < fullWeeks; w++) {
+                  // Each workout in week w+1 earns at weekly streak (w+1)*7 days equivalent
+                  maxPossible += getSatsForHabit((w + 1) * 7) * 3;
+                }
+                // Partial week: up to 3 workouts
+                const partialWorkouts = Math.min(extraDays, 3);
+                if (partialWorkouts > 0) {
+                  maxPossible += getSatsForHabit((fullWeeks + 1) * 7) * partialWorkouts;
+                }
+                // Weigh-ins: first one on day 1, then every 7 days
+                const weighInCount = Math.floor((yesterdayDayNum - 1) / 7) + 1;
+                maxPossible += weighInCount * CONFIG.weighInPayout;
+              }
+
+              // Earned through yesterday = total minus today's sats
+              const todaySats = satsLog.filter(s => s.date === getTodayStr()).reduce((sum, s) => sum + s.sats, 0);
+              const earnedThruYesterday = earned - todaySats;
+              
+              const pct = maxPossible > 0 ? Math.min(Math.round((earnedThruYesterday / maxPossible) * 100), 100) : 100;
               const pctColor = pct >= 90 ? 'var(--green)' : pct >= 70 ? 'var(--btc)' : 'var(--red)';
 
               return (
@@ -285,7 +290,7 @@ export default function SatSlayer() {
                     <span className="mono">{formatSats(earned)} earned</span>
                     <span className="mono">{formatSats(CONFIG.totalSats)} total</span>
                   </div>
-                  {dayNumber > 1 && (
+                  {yesterdayDayNum >= 1 && (
                     <div className="mt-3 py-2 px-3 rounded-xl text-center" style={{ background: pct >= 90 ? 'rgba(52,211,153,0.06)' : pct >= 70 ? 'rgba(247,147,26,0.06)' : 'rgba(248,113,113,0.06)' }}>
                       <span className="mono text-[13px] font-bold" style={{ color: pctColor }}>{pct}%</span>
                       <span className="text-[10px] text-[var(--text-muted)] ml-1.5">of possible sats earned</span>
