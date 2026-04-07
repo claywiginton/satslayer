@@ -67,11 +67,25 @@ export default function SatSlayer() {
     if (typeof window !== 'undefined') return (localStorage.getItem('pow-theme') as 'dark' | 'light') || 'dark';
     return 'dark';
   });
+  const [btcPrice, setBtcPrice] = useState<number | null>(null);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('pow-theme', theme);
   }, [theme]);
+
+  // Fetch BTC price
+  useEffect(() => {
+    const fetchPrice = () => {
+      fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd')
+        .then(r => r.json())
+        .then(d => { if (d?.bitcoin?.usd) setBtcPrice(d.bitcoin.usd); })
+        .catch(() => {});
+    };
+    fetchPrice();
+    const interval = setInterval(fetchPrice, 60000); // Update every 60s
+    return () => clearInterval(interval);
+  }, []);
 
   const dw = (kg: number) => `${Math.round((weightUnit === 'lbs' ? kgToLbs(kg) : kg) * 10) / 10}`;
   const wu = weightUnit;
@@ -200,10 +214,10 @@ export default function SatSlayer() {
             <KettlebellLogo size={32} />
             <div className="display text-[13px] tracking-wider">PROOF OF WORK</div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <div className="text-right">
               <div className="mono text-[14px] font-semibold text-[var(--btc)]">{formatSats(stats?.totalSatsEarned || 0)}</div>
-              <div className="text-[9px] text-[var(--text-muted)]">sats earned</div>
+              <div className="text-[9px] text-[var(--text-muted)]">{btcPrice ? `$${((stats?.totalSatsEarned || 0) / 100000000 * btcPrice).toFixed(2)}` : 'sats earned'}</div>
             </div>
             <button onClick={() => setWeightUnit(wu === 'kg' ? 'lbs' : 'kg')}
               className="text-[10px] mono px-2 py-1 rounded-md border border-[var(--border)] text-[var(--text-muted)] active:scale-95 transition-all">
@@ -643,7 +657,12 @@ export default function SatSlayer() {
             <div className="card p-6 text-center">
               <div className="text-[9px] font-semibold tracking-widest uppercase text-[var(--text-muted)] mb-1">Total earned</div>
               <div className="mono text-[36px] font-bold text-[var(--btc)] leading-tight">{formatSats(stats.totalSatsEarned)}</div>
-              <div className="text-[13px] text-[var(--text-muted)] mono mt-1">${satsToUsd(stats.totalSatsEarned)}</div>
+              <div className="text-[13px] text-[var(--text-muted)] mono mt-1">
+                {btcPrice ? `$${(stats.totalSatsEarned / 100000000 * btcPrice).toFixed(2)} USD` : `${satsToUsd(stats.totalSatsEarned)}`}
+              </div>
+              {btcPrice && (
+                <div className="text-[10px] text-[var(--text-muted)] mt-2">BTC: ${btcPrice.toLocaleString()}</div>
+              )}
             </div>
 
             <div className="card p-5">
