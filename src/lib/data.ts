@@ -234,7 +234,8 @@ export function calculateWeighInReward(currentWeight: number, previousWeight: nu
   weightLost: number;
 } {
   const weightLost = Math.round((previousWeight - currentWeight) * 10) / 10;
-  const qualified = weightLost >= CONFIG.weighInMinLoss;
+  // Qualified if lost any weight OR maintained (only 0 if gained)
+  const qualified = currentWeight <= previousWeight;
   const totalSats = qualified ? CONFIG.weighInPayout : 0;
   return { totalSats, qualified, weightLost };
 }

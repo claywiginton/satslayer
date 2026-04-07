@@ -609,15 +609,15 @@ export default function SatSlayer() {
                   {wiWeight && (() => {
                     const inputKg = weightUnit === 'lbs' ? lbsToKg(parseFloat(wiWeight)) : parseFloat(wiWeight);
                     const loss = Math.round((lastWeight - inputKg) * 10) / 10;
-                    const qualified = loss >= CONFIG.weighInMinLoss;
+                    const qualified = inputKg <= lastWeight;
                     return (
                       <div className="mt-3 p-4 rounded-2xl bg-[var(--bg)]">
-                        {qualified ? (
-                          <div className="text-center"><div className="mono text-[20px] text-[var(--btc)]">+{formatSats(CONFIG.weighInPayout)}</div><div className="text-[11px] text-[var(--green)] mt-1">↓{dw(Math.abs(loss))} {wu} — nice work</div></div>
-                        ) : loss > 0 ? (
-                          <div className="text-center"><div className="mono text-[20px] text-[var(--text-muted)]">0 sats</div><div className="text-[11px] text-[var(--text-muted)] mt-1">↓{dw(loss)} {wu} — need at least {CONFIG.weighInMinLoss} {wu} loss to qualify</div></div>
+                        {loss > 0 ? (
+                          <div className="text-center"><div className="mono text-[20px] text-[var(--btc)]">+{formatSats(CONFIG.weighInPayout)}</div><div className="text-[11px] text-[var(--green)] mt-1">↓{dw(loss)} {wu} — nice work</div></div>
+                        ) : loss === 0 ? (
+                          <div className="text-center"><div className="mono text-[20px] text-[var(--btc)]">+{formatSats(CONFIG.weighInPayout)}</div><div className="text-[11px] text-[var(--text-secondary)] mt-1">Maintained — still counts</div></div>
                         ) : (
-                          <div className="text-center"><div className="mono text-[20px] text-[var(--red)]">0 sats</div><div className="text-[11px] text-[var(--red)] mt-1">{loss === 0 ? 'No change' : `↑${dw(Math.abs(loss))} ${wu}`} — no reward</div></div>
+                          <div className="text-center"><div className="mono text-[20px] text-[var(--red)]">0 sats</div><div className="text-[11px] text-[var(--red)] mt-1">↑{dw(Math.abs(loss))} {wu} — must maintain or lose to earn</div></div>
                         )}
                       </div>
                     );
