@@ -18,7 +18,7 @@ export const CONFIG = {
   cheatDayCalorieMax: 3500, // Max calories on a cheat day (above this = streak breaks)
 
   // Base sats per habit (before multiplier)
-  baseSatsPerHabit: 500,
+  baseSatsPerHabit: 50,
 
   // Streak multiplier tiers — ramps fast to create addiction
   streakTiers: [
@@ -32,7 +32,7 @@ export const CONFIG = {
   ],
 
   // Weekly weigh-in — flat payout if lost at least 0.2 kg
-  weighInPayout: 10_000,
+  weighInPayout: 12_000,
   weighInMinLoss: 0.2,
 
 
