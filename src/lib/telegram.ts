@@ -97,7 +97,7 @@ export function eveningReminderMessage(
 }
 
 export function weighInReminderMessage(weekNumber: number): string {
-  return `⚖️ <b>PROOF OF WORK — Monday Weigh-in</b>\n\nWeek ${weekNumber}. Step on the scale.\n\n5,000 sats just for showing up. Lose weight and it pays even more.\n\nNo hiding from the number. That's the deal.`;
+  return `⚖️ <b>PROOF OF WORK — Weigh-in</b>\n\nWeek ${weekNumber}. Step on the scale (Monday or Tuesday).\n\n7,200 sats if you maintained or lost weight.\n\nNo hiding from the number. That's the deal.`;
 }
 
 export function streakWarningMessage(

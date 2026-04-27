@@ -610,7 +610,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
             {[0,1,2,3,4,5,6].map((i) => <div key={i} className="h-1 rounded-full w-5" style={{ background: 'var(--btc)' }} />)}
           </div>
 
-          <h2 className="display text-2xl mb-2 text-center">MONDAY WEIGH-INS</h2>
+          <h2 className="display text-2xl mb-2 text-center">WEEKLY WEIGH-INS</h2>
           <p className="text-sm text-[var(--text-muted)] text-center mb-6">Weigh in every Monday for bonus sats</p>
 
           <div className="card p-4 mb-4">

@@ -551,7 +551,7 @@ export default function SatSlayer() {
             <div className="text-center pt-2 mb-6">
               <div className="text-3xl mb-2">⚖️</div>
               <h2 className="display text-[22px] mb-1">Week {weekNumber} Weigh-in</h2>
-              <p className="text-[12px] text-[var(--text-muted)]">Step on the scale, earn sats</p>
+              <p className="text-[12px] text-[var(--text-muted)]">Weigh in Monday or Tuesday, earn sats</p>
             </div>
 
             {alreadyWeighed && !wiResult ? (

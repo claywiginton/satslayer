@@ -13,6 +13,10 @@
       "schedule": "0 7 * * 1"
     },
     {
+      "path": "/api/cron?trigger=weighin",
+      "schedule": "0 7 * * 2"
+    },
+    {
       "path": "/api/cron?trigger=weekly_summary",
       "schedule": "0 17 * * 0"
     },
