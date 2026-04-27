@@ -32,7 +32,7 @@ export const CONFIG = {
   ],
 
   // Weekly weigh-in — flat payout if lost at least 0.2 kg
-  weighInPayout: 12_000,
+  weighInPayout: 7_200,
   weighInMinLoss: 0.2,
 
 
