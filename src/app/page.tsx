@@ -153,7 +153,21 @@ export default function SatSlayer() {
     setToggling(habit);
     const ok = await saveHabitValue(habit, value);
     if (ok) {
-      const updatedLog: DayLog = { date: getTodayStr(), steps: habit === 'steps' ? value : (todayLog?.steps || 0), workout: habit === 'workout' ? value : (todayLog?.workout || 0), calories: habit === 'calories' ? value : (todayLog?.calories || 0), sugar: habit === 'sugar' ? value : (todayLog?.sugar || 0) };
+      // If cheat day on calories, also auto-log sugar (cheat day covers both)
+      if (isCheatDayLog) {
+        const sugarAlreadyDone = todayLog ? habitMet('sugar', todayLog.sugar) : false;
+        if (!sugarAlreadyDone) {
+          await saveHabitValue('sugar', 1);
+        }
+      }
+
+      const updatedLog: DayLog = { 
+        date: getTodayStr(), 
+        steps: habit === 'steps' ? value : (todayLog?.steps || 0), 
+        workout: habit === 'workout' ? value : (todayLog?.workout || 0), 
+        calories: habit === 'calories' ? value : (todayLog?.calories || 0), 
+        sugar: (habit === 'sugar' || isCheatDayLog) ? 1 : (todayLog?.sugar || 0) 
+      };
       const streakData = calculateStreaks([...dayLogs.filter(d => d.date !== getTodayStr()), updatedLog]);
       
       // Cheat day: 0 sats but streak doesn't break
@@ -164,12 +178,13 @@ export default function SatSlayer() {
       }
       const [s, t, d] = await Promise.all([getPlayerStats(), getTodayLog(), getDayLogs()]);
       setStats(s); setTodayLog(t); setDayLogs(d);
-      setShowReward({ sats, habit: isCheatDayLog ? 'cheat day — streak safe' : habit });
+      setShowReward({ sats, habit: isCheatDayLog ? 'cheat day — streak safe (calories + sugar)' : habit });
       setTimeout(() => setShowReward(null), 2500);
       setHabitInputs(prev => ({ ...prev, [habit]: '' }));
       if (t) {
         const allDone = HABITS.every(h => {
           if (h.type === 'calories') return t.calories > 0 && getCalorieStatus(t.calories) !== 'fail';
+          if (h.type === 'sugar') return habitMet('sugar', t.sugar) || getCalorieStatus(t.calories) === 'cheat';
           return habitMet(h.type, t[h.type]);
         });
         if (allDone) fetch('/api/telegram', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'all_complete', data: { totalSats: sats } }) }).catch(() => {});
@@ -342,6 +357,8 @@ export default function SatSlayer() {
                 const todayVal = todayLog ? todayLog[habit.type] : 0;
                 const completed = habit.type === 'calories' 
                   ? (todayVal > 0 && getCalorieStatus(todayVal) !== 'fail') 
+                  : habit.type === 'sugar'
+                  ? (habitMet('sugar', todayVal) || (todayLog && getCalorieStatus(todayLog.calories) === 'cheat'))
                   : habitMet(habit.type, todayVal);
                 const isToggling = toggling === habit.type;
                 const nextTier = streak ? getNextTier(streak.currentStreak) : null;
@@ -409,7 +426,7 @@ export default function SatSlayer() {
                       {completed && (
                         <div className="mt-3 py-2.5 px-4 rounded-xl text-center" style={{ background: 'rgba(52,211,153,0.06)' }}>
                           <span className="mono text-[13px] text-[var(--green)]">
-                            {habit.type === 'steps' ? `${todayVal.toLocaleString()} steps logged` : habit.type === 'calories' ? (getCalorieStatus(todayVal) === 'cheat' ? `🎫 ${todayVal.toLocaleString()} cal — cheat day` : `${todayVal.toLocaleString()} cal logged`) : habit.type === 'sugar' ? 'No sugar today ✅' : 'Exercise complete'}
+                            {habit.type === 'steps' ? `${todayVal.toLocaleString()} steps logged` : habit.type === 'calories' ? (getCalorieStatus(todayVal) === 'cheat' ? `🎫 ${todayVal.toLocaleString()} cal — cheat day` : `${todayVal.toLocaleString()} cal logged`) : habit.type === 'sugar' ? (todayLog && getCalorieStatus(todayLog.calories) === 'cheat' ? '🎫 Cheat day — streak safe' : 'No sugar today ✅') : 'Exercise complete'}
                           </span>
                         </div>
                       )}
