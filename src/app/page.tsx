@@ -313,7 +313,19 @@ export default function SatSlayer() {
               let dailyMisses = 0;
               for (const log of yesterdayLogs) {
                 for (const h of HABITS) {
-                  if (h.streakMode === 'daily' && !habitMet(h.type, log[h.type])) dailyMisses++;
+                  if (h.streakMode === 'daily') {
+                    if (h.type === 'calories') {
+                      // Cheat day calories count as completed
+                      const calStatus = getCalorieStatus(log.calories);
+                      if (calStatus === 'fail' || calStatus === 'not_logged') dailyMisses++;
+                    } else if (h.type === 'sugar') {
+                      // Sugar is covered by cheat day
+                      const calStatus = getCalorieStatus(log.calories);
+                      if (!habitMet(h.type, log[h.type]) && calStatus !== 'cheat') dailyMisses++;
+                    } else {
+                      if (!habitMet(h.type, log[h.type])) dailyMisses++;
+                    }
+                  }
                 }
               }
               
