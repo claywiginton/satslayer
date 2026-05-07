@@ -117,11 +117,11 @@ export function getCheatDayInfo(dayNumber: number, usedCheatDays: number): {
     return { available: false, totalEarned: 0, totalUsed: usedCheatDays, nextCheatDay: cheatDayLockoutDays + 1, inLockout: true };
   }
 
-  // After lockout: 1 cheat day earned every cheatDayFrequency days
+  // After lockout: first cheat day available immediately, then 1 more every cheatDayFrequency days
   const daysAfterLockout = dayNumber - cheatDayLockoutDays;
-  const totalEarned = Math.floor(daysAfterLockout / cheatDayFrequency);
+  const totalEarned = 1 + Math.floor((daysAfterLockout - 1) / cheatDayFrequency);
   const available = totalEarned > usedCheatDays;
-  const nextEarnDay = cheatDayLockoutDays + ((totalEarned + 1) * cheatDayFrequency);
+  const nextEarnDay = cheatDayLockoutDays + 1 + (totalEarned * cheatDayFrequency);
 
   return { available, totalEarned, totalUsed: usedCheatDays, nextCheatDay: nextEarnDay, inLockout: false };
 }
