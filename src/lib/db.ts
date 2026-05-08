@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import {
   CONFIG, HABITS, type HabitType, type DayLog, type WeighIn, type HabitStreak, type PlayerStats,
-  getMultiplier, getSatsForHabit, getTodayStr, calculateWeighInReward, checkMilestones, habitMet,
+  getMultiplier, getSatsForHabit, getTodayStr, calculateWeighInReward, checkMilestones, habitMet, getCalorieStatus,
 } from './data';
 
 // ── PLAYER PROFILE ──
@@ -149,7 +149,13 @@ export function calculateStreaks(logs: DayLog[]): Record<HabitType, { current: n
       });
 
       for (let i = 0; i < relevantLogs.length; i++) {
-        const completed = habitMet(habit, relevantLogs[i][habit]);
+        // Check if habit is completed — cheat days count as completed for calories and sugar
+        let completed = habitMet(habit, relevantLogs[i][habit]);
+        if (!completed) {
+          const calStatus = getCalorieStatus(relevantLogs[i].calories);
+          if (habit === 'calories' && calStatus === 'cheat') completed = true;
+          if (habit === 'sugar' && calStatus === 'cheat') completed = true;
+        }
         if (completed) {
           if (i === 0) {
             current = 1;
@@ -175,7 +181,14 @@ export function calculateStreaks(logs: DayLog[]): Record<HabitType, { current: n
         const lastDate = new Date(ly, lm - 1, ld);
         const todayDate = new Date(ty, tm - 1, td);
         const diffFromToday = Math.round((todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
-        if (diffFromToday > 1 || !habitMet(habit, lastLog[habit])) {
+        // Check if last log was completed (including cheat days)
+        let lastCompleted = habitMet(habit, lastLog[habit]);
+        if (!lastCompleted) {
+          const calStatus = getCalorieStatus(lastLog.calories);
+          if (habit === 'calories' && calStatus === 'cheat') lastCompleted = true;
+          if (habit === 'sugar' && calStatus === 'cheat') lastCompleted = true;
+        }
+        if (diffFromToday > 1 || !lastCompleted) {
           current = 0;
         }
       }
