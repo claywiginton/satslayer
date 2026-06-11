@@ -17,7 +17,7 @@ export interface PlayerProfile {
 export async function getPlayerProfile(): Promise<PlayerProfile | null> {
   const { data, error } = await supabase
     .from('player_profile')
-    .select('*')
+    .select('id,strike_username,start_weight,goal_weight,start_date,created_at,telegram_chat_id')
     .limit(1);
 
   if (error || !data || data.length === 0) return null;
@@ -61,7 +61,7 @@ export async function savePlayerProfile(
 export async function getDayLogs(): Promise<DayLog[]> {
   const { data, error } = await supabase
     .from('day_logs')
-    .select('*')
+    .select('date,steps,workout,calories,sugar')
     .order('date', { ascending: true });
 
   if (error) { console.error('Load day_logs failed:', error); return []; }
@@ -78,7 +78,7 @@ export async function getTodayLog(): Promise<DayLog | null> {
   const today = getTodayStr();
   const { data, error } = await supabase
     .from('day_logs')
-    .select('*')
+    .select('date,steps,workout,calories,sugar')
     .eq('date', today)
     .limit(1);
 
@@ -268,7 +268,7 @@ export function calculateStreaks(logs: DayLog[]): Record<HabitType, { current: n
 export async function getSatsLog(): Promise<{ date: string; habit: string; sats: number }[]> {
   const { data, error } = await supabase
     .from('sats_log')
-    .select('*')
+    .select('date,habit,sats')
     .order('date', { ascending: true });
 
   if (error) { console.error('Load sats_log failed:', error); return []; }
@@ -286,7 +286,7 @@ export async function logSats(date: string, habit: string, sats: number): Promis
 export async function getWeighIns(): Promise<WeighIn[]> {
   const { data, error } = await supabase
     .from('weigh_ins')
-    .select('*')
+    .select('id,week_number,date,weight,previous_weight,change,sats_earned,milestones_hit')
     .order('week_number', { ascending: true });
 
   if (error) { console.error('Load weigh_ins failed:', error); return []; }

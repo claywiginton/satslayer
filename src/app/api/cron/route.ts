@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
   const trigger = req.nextUrl.searchParams.get('trigger') || 'evening';
 
   try {
-    const { data: profiles } = await supabase.from('player_profile').select('*').limit(1);
+    const { data: profiles } = await supabase.from('player_profile').select('id,strike_username,start_weight,goal_weight,start_date,telegram_chat_id').limit(1);
     const profile = profiles?.[0];
     if (!profile) return NextResponse.json({ message: 'No profile found, skipping' });
 
@@ -33,12 +33,12 @@ export async function GET(req: NextRequest) {
     const dayNumber = getDayNumber(undefined, startDate);
     const weekNumber = getWeekNumber(undefined, startDate);
 
-    const { data: todayLogs } = await supabase.from('day_logs').select('*').eq('date', today).limit(1);
+    const { data: todayLogs } = await supabase.from('day_logs').select('date,steps,workout,calories,sugar').eq('date', today).limit(1);
     const todayLog = todayLogs?.[0] || null;
 
-    const { data: allLogs } = await supabase.from('day_logs').select('*').order('date', { ascending: true });
-    const { data: weighIns } = await supabase.from('weigh_ins').select('*').order('week_number', { ascending: true });
-    const { data: allSats } = await supabase.from('sats_log').select('*');
+    const { data: allLogs } = await supabase.from('day_logs').select('date,steps,workout,calories,sugar').order('date', { ascending: true });
+    const { data: weighIns } = await supabase.from('weigh_ins').select('id,week_number,date,weight,previous_weight,change,sats_earned,milestones_hit').order('week_number', { ascending: true });
+    const { data: allSats } = await supabase.from('sats_log').select('date,habit,sats');
 
     const playerMessages: string[] = [];
     const sponsorMessages: string[] = [];
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
       let streak = 0;
       const sorted = [...allLogs].sort((a: any, b: any) => b.date.localeCompare(a.date));
       for (const log of sorted) {
-        if (habitMet(habitType as any, Number(log[habitType]) || 0)) streak++;
+        if (habitMet(habitType as any, Number((log as any)[habitType]) || 0)) streak++;
         else break;
       }
       return streak;
