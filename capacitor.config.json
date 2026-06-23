@@ -1,0 +1,14 @@
+{
+  "appId": "com.proofofwork.app",
+  "appName": "Proof of Work",
+  "webDir": "out",
+  "server": {
+    "url": "https://powfitness.vercel.app",
+    "cleartext": false
+  },
+  "ios": {
+    "scheme": "Proof of Work",
+    "contentInset": "automatic",
+    "backgroundColor": "#08080a"
+  }
+}
