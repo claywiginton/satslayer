@@ -8,7 +8,7 @@
   },
   "ios": {
     "scheme": "Proof of Work",
-    "contentInset": "automatic",
+    "contentInset": "never",
     "backgroundColor": "#08080a",
     "preferredContentMode": "mobile",
     "scrollEnabled": true,
