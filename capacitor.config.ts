@@ -13,6 +13,9 @@ const config: CapacitorConfig = {
     scheme: 'Proof of Work',
     contentInset: 'automatic',
     backgroundColor: '#08080a',
+    preferredContentMode: 'mobile',
+    scrollEnabled: true,
+    allowsLinkPreview: false,
   },
 };
 
