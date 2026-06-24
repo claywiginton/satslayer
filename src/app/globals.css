@@ -189,14 +189,6 @@ input:focus, button:focus-visible {
 
 /* ── iOS NATIVE FEEL ── */
 
-/* Safe areas for notch/dynamic island */
-html {
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
-}
-
 /* Disable text selection on interactive elements */
 button, .card, nav, header, [role="button"] {
   -webkit-user-select: none;
@@ -228,24 +220,13 @@ input, select, textarea {
   font-size: 16px !important; /* iOS won't zoom if font-size >= 16px */
 }
 
-/* Smooth 60fps transitions */
+/* Smooth transitions */
 .card, button {
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
-  will-change: transform;
 }
 
 /* Haptic-feel tap animation */
 button:active, .card:active {
   transition: transform 0.08s ease-out;
-}
-
-/* Status bar area background */
-@supports (padding-top: env(safe-area-inset-top)) {
-  header {
-    padding-top: env(safe-area-inset-top);
-  }
-  nav {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
 }
