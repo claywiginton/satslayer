@@ -211,7 +211,7 @@ export default function SatSlayer() {
   };
 
   return (
-    <div className="min-h-screen relative z-10 pb-24">
+    <div className="flex flex-col relative z-10" style={{ height: '100dvh' }}>
       {/* Sat reward popup */}
       {showReward && (
         <div className="fixed top-16 left-1/2 -translate-x-1/2 z-[60] sat-pop">
@@ -222,9 +222,8 @@ export default function SatSlayer() {
         </div>
       )}
 
-      {/* Header */}
-      {/* Header: fixed from very top of screen, content padded below status bar */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[var(--bg)] border-b border-[var(--border)]">
+      {/* Header — not fixed, not sticky. Just sits at the top of the flex layout. */}
+      <header className="flex-shrink-0 bg-[var(--bg)] border-b border-[var(--border)]">
         <div className="max-w-lg mx-auto px-5 py-2.5 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <KettlebellLogo size={32} />
@@ -247,7 +246,7 @@ export default function SatSlayer() {
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-5 pt-16">
+      <main className="flex-1 overflow-y-auto max-w-lg mx-auto px-5 pt-4 pb-8 w-full" style={{ overscrollBehavior: 'none' }}>
 
         {/* ═══ TODAY TAB ═══ */}
         {tab === 'today' && (
@@ -881,8 +880,8 @@ export default function SatSlayer() {
         )}
       </main>
 
-      {/* Bottom nav */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[var(--bg)]/90 backdrop-blur-xl border-t border-[var(--border)]" style={{ paddingBottom: 'env(safe-area-inset-bottom, 4px)' }}>
+      {/* Bottom nav — sits at bottom of flex layout, not fixed */}
+      <nav className="flex-shrink-0 bg-[var(--bg)] border-t border-[var(--border)]" style={{ paddingBottom: 'env(safe-area-inset-bottom, 4px)' }}>
         <div className="max-w-lg mx-auto flex justify-around py-2">
           {([
             { id: 'today' as const, label: 'Today', icon: '⚡' },
