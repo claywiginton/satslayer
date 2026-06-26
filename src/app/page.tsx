@@ -211,7 +211,7 @@ export default function SatSlayer() {
   };
 
   return (
-    <div className="flex flex-col relative z-10" style={{ height: '100dvh' }}>
+    <div className="flex flex-col relative z-10" style={{ height: '100dvh', paddingTop: 'env(safe-area-inset-top, 0px)' }}>
       {/* Sat reward popup */}
       {showReward && (
         <div className="fixed top-16 left-1/2 -translate-x-1/2 z-[60] sat-pop">
