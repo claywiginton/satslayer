@@ -584,6 +584,92 @@ export default function SatSlayer() {
               <p className="text-[12px] text-[var(--text-muted)]">Weigh in Monday or Tuesday, earn sats</p>
             </div>
 
+            {/* Weight progress chart */}
+            {weighIns.length >= 2 && (
+              <div className="card p-4 mb-4">
+                <div className="text-[10px] font-semibold tracking-widest uppercase text-[var(--text-muted)] mb-3">Weight Progress</div>
+                {(() => {
+                  const sorted = [...weighIns].sort((a, b) => a.weekNumber - b.weekNumber);
+                  const weights = sorted.map(w => w.weight);
+                  const maxW = Math.max(...weights, profile.startWeight);
+                  const minW = Math.min(...weights, profile.goalWeight);
+                  const range = maxW - minW || 1;
+                  const pad = range * 0.1;
+                  const top = maxW + pad;
+                  const bot = minW - pad;
+                  const totalRange = top - bot;
+                  
+                  const chartW = 300;
+                  const chartH = 140;
+                  const marginL = 35;
+                  const marginR = 10;
+                  const marginT = 10;
+                  const marginB = 25;
+                  const plotW = chartW - marginL - marginR;
+                  const plotH = chartH - marginT - marginB;
+                  
+                  const pts = sorted.map((w, i) => ({
+                    x: marginL + (i / Math.max(sorted.length - 1, 1)) * plotW,
+                    y: marginT + ((top - w.weight) / totalRange) * plotH,
+                    weight: w.weight,
+                    week: w.weekNumber,
+                  }));
+                  
+                  const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
+                  const goalY = marginT + ((top - profile.goalWeight) / totalRange) * plotH;
+                  const startY = marginT + ((top - profile.startWeight) / totalRange) * plotH;
+                  
+                  // Y-axis labels
+                  const yLabels = [top, top - totalRange * 0.5, bot].map(v => ({
+                    val: Math.round(v * 10) / 10,
+                    y: marginT + ((top - v) / totalRange) * plotH,
+                  }));
+                  
+                  return (
+                    <svg viewBox={`0 0 ${chartW} ${chartH}`} className="w-full" style={{ height: 'auto' }}>
+                      {/* Grid lines */}
+                      {yLabels.map((l, i) => (
+                        <g key={i}>
+                          <line x1={marginL} y1={l.y} x2={chartW - marginR} y2={l.y} stroke="var(--border)" strokeWidth="0.5" />
+                          <text x={marginL - 4} y={l.y + 3} textAnchor="end" fill="var(--text-muted)" fontSize="7" fontFamily="var(--font-mono)">{l.val}</text>
+                        </g>
+                      ))}
+                      
+                      {/* Goal line */}
+                      {goalY >= marginT && goalY <= marginT + plotH && (
+                        <g>
+                          <line x1={marginL} y1={goalY} x2={chartW - marginR} y2={goalY} stroke="var(--green)" strokeWidth="0.5" strokeDasharray="4,3" opacity="0.5" />
+                          <text x={chartW - marginR + 2} y={goalY + 3} fill="var(--green)" fontSize="6" opacity="0.7">goal</text>
+                        </g>
+                      )}
+                      
+                      {/* Area fill under line */}
+                      <path d={`${line} L${pts[pts.length-1].x},${marginT + plotH} L${pts[0].x},${marginT + plotH} Z`} fill="var(--btc)" opacity="0.06" />
+                      
+                      {/* Line */}
+                      <path d={line} fill="none" stroke="var(--btc)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      
+                      {/* Data points */}
+                      {pts.map((p, i) => (
+                        <circle key={i} cx={p.x} cy={p.y} r={i === pts.length - 1 ? 3.5 : 2.5} fill={i === pts.length - 1 ? 'var(--btc)' : 'var(--bg-card)'} stroke="var(--btc)" strokeWidth="1.5" />
+                      ))}
+                      
+                      {/* Current weight label on last point */}
+                      {pts.length > 0 && (
+                        <text x={pts[pts.length-1].x} y={pts[pts.length-1].y - 7} textAnchor="middle" fill="var(--btc)" fontSize="8" fontWeight="600" fontFamily="var(--font-mono)">
+                          {pts[pts.length-1].weight}
+                        </text>
+                      )}
+                      
+                      {/* X-axis: first and last week */}
+                      <text x={pts[0].x} y={chartH - 5} textAnchor="middle" fill="var(--text-muted)" fontSize="7" fontFamily="var(--font-mono)">W{sorted[0].weekNumber}</text>
+                      <text x={pts[pts.length-1].x} y={chartH - 5} textAnchor="middle" fill="var(--text-muted)" fontSize="7" fontFamily="var(--font-mono)">W{sorted[sorted.length-1].weekNumber}</text>
+                    </svg>
+                  );
+                })()}
+              </div>
+            )}
+
             {alreadyWeighed && !wiResult ? (
               <div className="card p-8 text-center">
                 <div className="text-[14px] font-bold text-[var(--green)] mb-3 display tracking-widest">LOGGED</div>
