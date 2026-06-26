@@ -8,30 +8,30 @@
   --font-display: 'Outfit', sans-serif;
   --font-body: 'DM Sans', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
-  --bg: #08080a;
-  --bg-card: #101013;
+  --bg: #06060a;
+  --bg-card: #0f0f14;
   --bg-card-hover: #161619;
-  --bg-elevated: #1a1a1f;
-  --bg-input: #0e0e11;
-  --border: #1c1c22;
+  --bg-elevated: #18181e;
+  --bg-input: #0c0c10;
+  --border: #1a1a22;
   --border-hover: #28282f;
-  --border-subtle: #14141a;
+  --border-subtle: #121218;
   --text: #f0ede8;
   --text-secondary: #9b9ba3;
-  --text-muted: #5a5a64;
+  --text-muted: #55555f;
   --btc: #f7931a;
-  --btc-soft: #f7931a10;
-  --btc-medium: #f7931a25;
+  --btc-soft: #f7931a08;
+  --btc-medium: #f7931a18;
   --btc-glow: rgba(247, 147, 26, 0.12);
   --btc-dim: #7a4a0e;
   --green: #34d399;
-  --green-soft: #34d39912;
+  --green-soft: #34d39908;
   --green-dim: #065f46;
   --red: #f87171;
-  --red-soft: #f8717112;
+  --red-soft: #f8717108;
   --red-dim: #7f1d1d;
   --purple: #a78bfa;
-  --purple-soft: #a78bfa12;
+  --purple-soft: #a78bfa08;
   --btc-light: #ffab40;
 }
 
@@ -40,28 +40,28 @@
 [data-theme="light"] {
   --bg: #f5f3ef;
   --bg-card: #ffffff;
-  --bg-card-hover: #f9f8f6;
-  --bg-elevated: #eeecea;
-  --bg-input: #f9f8f6;
-  --border: #e2e0dc;
+  --bg-card-hover: #fafaf8;
+  --bg-elevated: #f0eeea;
+  --bg-input: #f7f6f4;
+  --border: #e4e2de;
   --border-hover: #d4d2ce;
   --border-subtle: #eeecea;
   --text: #1a1a1e;
   --text-secondary: #5a5a64;
   --text-muted: #9b9ba3;
   --btc: #e8820e;
-  --btc-soft: #e8820e10;
-  --btc-medium: #e8820e20;
-  --btc-glow: rgba(232, 130, 14, 0.1);
+  --btc-soft: #e8820e08;
+  --btc-medium: #e8820e15;
+  --btc-glow: rgba(232, 130, 14, 0.08);
   --btc-dim: #c06a00;
   --green: #0d9668;
-  --green-soft: #0d966810;
+  --green-soft: #0d966808;
   --green-dim: #065f46;
   --red: #dc2626;
-  --red-soft: #dc262610;
+  --red-soft: #dc262608;
   --red-dim: #991b1b;
   --purple: #7c3aed;
-  --purple-soft: #7c3aed10;
+  --purple-soft: #7c3aed08;
   --btc-light: #f59e0b;
 }
 
@@ -80,17 +80,14 @@ body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.015'/%3E%3C/svg%3E");
   pointer-events: none;
   z-index: 0;
 }
 
-[data-theme="light"] body::before {
-  opacity: 0.4;
-}
-
+[data-theme="light"] body::before { opacity: 0.3; }
 [data-theme="light"] .card {
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.03);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.02);
 }
 
 ::-webkit-scrollbar { width: 0; }
@@ -100,7 +97,7 @@ body::before {
   font-family: var(--font-display);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
   line-height: 1.1;
 }
 
@@ -110,45 +107,108 @@ body::before {
   letter-spacing: -0.03em;
 }
 
-/* Cards — layered depth */
+/* Cards */
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 18px;
-  transition: all 0.2s ease;
+  border-radius: 16px;
+  transition: transform 0.15s ease, border-color 0.2s ease;
 }
 
 .card:active {
-  transform: scale(0.995);
+  transform: scale(0.985);
+}
+
+/* Habit card completed glow */
+.card-complete {
+  border-color: rgba(52, 211, 153, 0.15) !important;
+  background: linear-gradient(180deg, rgba(52,211,153,0.03) 0%, var(--bg-card) 100%);
+}
+
+/* Habit card accent bar — thinner, gradient */
+.accent-bar {
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+}
+
+/* Streak badge */
+.streak-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  letter-spacing: -0.02em;
+  background: var(--btc-medium);
+  color: var(--btc);
+}
+
+/* Bounty progress bar glow */
+.progress-glow {
+  box-shadow: 0 0 12px rgba(247, 147, 26, 0.25);
+}
+
+/* Premium button */
+.btn-primary {
+  position: relative;
+  overflow: hidden;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transition: all 0.12s ease;
+}
+
+.btn-primary:active {
+  transform: scale(0.97);
+  filter: brightness(0.92);
+}
+
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* Completion ring glow */
+.ring-glow {
+  filter: drop-shadow(0 0 6px currentColor);
 }
 
 /* Animations */
 .animate-in {
-  animation: fadeSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   opacity: 0;
 }
 
 @keyframes fadeSlideUp {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-.stagger-1 { animation-delay: 0.05s; }
-.stagger-2 { animation-delay: 0.1s; }
-.stagger-3 { animation-delay: 0.15s; }
-.stagger-4 { animation-delay: 0.2s; }
+.stagger-1 { animation-delay: 0.04s; }
+.stagger-2 { animation-delay: 0.08s; }
+.stagger-3 { animation-delay: 0.12s; }
+.stagger-4 { animation-delay: 0.16s; }
 
 @keyframes glowPulse {
-  0%, 100% { box-shadow: 0 0 0 0 var(--btc-glow), 0 0 0 0 var(--btc-glow); }
-  50% { box-shadow: 0 0 30px 6px var(--btc-glow), 0 4px 40px 0 var(--btc-glow); }
+  0%, 100% { box-shadow: 0 0 0 0 var(--btc-glow); }
+  50% { box-shadow: 0 0 24px 4px var(--btc-glow); }
 }
 .glow-btc { animation: glowPulse 2.5s ease-in-out infinite; }
 
 @keyframes satReward {
   0% { opacity: 0; transform: translateY(16px) scale(0.9); }
-  12% { opacity: 1; transform: translateY(-4px) scale(1.06); }
+  12% { opacity: 1; transform: translateY(-6px) scale(1.08); }
   24% { transform: translateY(0) scale(1); }
-  75% { opacity: 1; }
+  80% { opacity: 1; }
   100% { opacity: 0; transform: translateY(-14px); }
 }
 .sat-pop {
@@ -160,9 +220,17 @@ body::before {
   100% { background-position: 200% 0; }
 }
 .shimmer {
-  background: linear-gradient(90deg, transparent, rgba(247,147,26,0.06), transparent);
+  background: linear-gradient(90deg, transparent, rgba(247,147,26,0.04), transparent);
   background-size: 200% 100%;
   animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes countPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+.count-pulse {
+  animation: countPulse 1s ease-in-out infinite;
 }
 
 /* Input styling */
@@ -178,55 +246,15 @@ input[type="number"]::-webkit-inner-spin-button {
   margin: 0;
 }
 
-/* Smooth focus */
-input:focus, button:focus-visible {
-  outline: none;
-}
+input:focus, button:focus-visible { outline: none; }
 
-/* Premium button press */
-.btn-press { transition: all 0.15s ease; }
-.btn-press:active { transform: scale(0.97); opacity: 0.9; }
-
-/* ── iOS NATIVE FEEL ── */
-
-/* Disable text selection on interactive elements */
+/* iOS native feel */
 button, .card, nav, header, [role="button"] {
   -webkit-user-select: none;
   user-select: none;
 }
-
-/* Disable long-press context menu on buttons/cards */
-button, .card, img {
-  -webkit-touch-callout: none;
-}
-
-/* Smooth momentum scrolling */
-main, .scrollable {
-  -webkit-overflow-scrolling: touch;
-}
-
-/* Disable pull-to-refresh */
-body {
-  overscroll-behavior-y: contain;
-}
-
-/* Disable tap highlight */
-* {
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* Disable zoom on input focus (already set max-scale=1 in viewport) */
-input, select, textarea {
-  font-size: 16px !important; /* iOS won't zoom if font-size >= 16px */
-}
-
-/* Smooth transitions */
-.card, button {
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
-}
-
-/* Haptic-feel tap animation */
-button:active, .card:active {
-  transition: transform 0.08s ease-out;
-}
+button, .card, img { -webkit-touch-callout: none; }
+main, .scrollable { -webkit-overflow-scrolling: touch; }
+* { -webkit-tap-highlight-color: transparent; }
+input, select, textarea { font-size: 16px !important; }
+.card, button { -webkit-transform: translateZ(0); transform: translateZ(0); }

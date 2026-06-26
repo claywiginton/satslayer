@@ -252,20 +252,21 @@ export default function SatSlayer() {
         {tab === 'today' && (
           <div className="animate-in">
             {/* Day header + completion ring */}
-            <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center justify-between mb-4">
               <div>
-                <div className="display text-[20px]">Day {dayNumber}</div>
-                <div className="text-[11px] text-[var(--text-muted)] mt-0.5">Week {weekNumber} · {todayCount}/{HABITS.length} complete</div>
+                <div className="display text-[28px] text-[var(--text)]">Day {dayNumber}</div>
+                <div className="text-[12px] text-[var(--text-muted)] mt-1">Week {weekNumber} · {todayCount}/{HABITS.length} complete</div>
               </div>
-              {/* Mini completion ring */}
-              <div className="relative w-14 h-14">
-                <svg className="w-14 h-14 -rotate-90" viewBox="0 0 56 56">
-                  <circle cx="28" cy="28" r="24" fill="none" stroke="var(--border)" strokeWidth="3" />
-                  <circle cx="28" cy="28" r="24" fill="none" stroke={todayComplete ? 'var(--green)' : 'var(--btc)'} strokeWidth="3"
-                    strokeDasharray={`${(todayCount / HABITS.length) * 150.8} 150.8`} strokeLinecap="round" className="transition-all duration-700" />
+              {/* Completion ring */}
+              <div className="relative w-16 h-16">
+                <svg className="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
+                  <circle cx="32" cy="32" r="27" fill="none" stroke="var(--border)" strokeWidth="3" />
+                  <circle cx="32" cy="32" r="27" fill="none" stroke={todayComplete ? 'var(--green)' : 'var(--btc)'} strokeWidth="3.5"
+                    strokeDasharray={`${(todayCount / HABITS.length) * 169.6} 169.6`} strokeLinecap="round" className={`transition-all duration-700 ${todayComplete ? 'ring-glow' : ''}`}
+                    style={{ color: todayComplete ? 'var(--green)' : 'var(--btc)' }} />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="mono text-[13px] font-bold" style={{ color: todayComplete ? 'var(--green)' : 'var(--btc)' }}>{todayCount}/{HABITS.length}</span>
+                  <span className="mono text-[15px] font-bold" style={{ color: todayComplete ? 'var(--green)' : 'var(--btc)' }}>{todayCount}/{HABITS.length}</span>
                 </div>
               </div>
             </div>
@@ -401,11 +402,11 @@ export default function SatSlayer() {
                 }
 
                 return (
-                  <div key={habit.type} className="card overflow-hidden">
+                  <div key={habit.type} className={`card overflow-hidden ${completed ? 'card-complete' : ''}`}>
                     {/* Color accent bar */}
-                    <div className="h-[3px]" style={{ background: completed ? 'var(--green)' : habit.color, opacity: completed ? 0.5 : 1 }} />
+                    <div className="accent-bar" style={{ background: completed ? 'var(--green)' : `linear-gradient(90deg, ${habit.color}, ${habit.color}88)` }} />
 
-                    <div className={`p-5 ${completed ? 'opacity-60' : ''}`}>
+                    <div className={`p-5 ${completed ? 'opacity-70' : ''}`}>
                       {/* Header row */}
                       <div className="flex items-start justify-between mb-1">
                         <div className="flex items-center gap-3">
@@ -420,17 +421,17 @@ export default function SatSlayer() {
                       {/* Streak + reward info */}
                       <div className="flex items-center gap-2 mt-2.5 mb-1">
                         {streak && streak.currentStreak > 0 && (
-                          <span className="text-[10px] mono font-semibold px-2 py-1 rounded-lg" style={{ background: `${habit.color}12`, color: habit.color }}>
-                            🔥 {isWeekly ? `${Math.floor(streak.currentStreak / 7)}w` : `${streak.currentStreak}d`} streak · {streak.multiplier}×
+                          <span className="streak-badge" style={{ background: `${habit.color}15`, color: habit.color }}>
+                            🔥 {isWeekly ? `${Math.floor(streak.currentStreak / 7)}w` : `${streak.currentStreak}d`} · {streak.multiplier}×
                           </span>
                         )}
                         {isWeekly && (
-                          <span className="text-[10px] mono px-2 py-1 rounded-lg" style={{ background: weeklyCount >= (habit.weeklyTarget || 5) ? 'var(--green-soft)' : 'var(--bg-elevated)', color: weeklyCount >= (habit.weeklyTarget || 5) ? 'var(--green)' : 'var(--text-muted)' }}>
+                          <span className="streak-badge" style={{ background: weeklyCount >= (habit.weeklyTarget || 5) ? 'rgba(52,211,153,0.1)' : 'var(--bg-elevated)', color: weeklyCount >= (habit.weeklyTarget || 5) ? 'var(--green)' : 'var(--text-muted)' }}>
                             {weeklyCount}/{habit.weeklyTarget} this week
                           </span>
                         )}
                         {!completed && (
-                          <span className="text-[10px] mono font-semibold text-[var(--btc)] ml-auto">+{formatSats(streak?.satsPerCompletion || 500)} sats</span>
+                          <span className="mono text-[11px] font-bold text-[var(--btc)] ml-auto">+{formatSats(streak?.satsPerCompletion || 500)}</span>
                         )}
                       </div>
 
@@ -478,8 +479,8 @@ export default function SatSlayer() {
                           <button
                             onClick={() => handleSubmitHabit(habit.type)}
                             disabled={!meetsThreshold || isToggling}
-                            className="w-full mt-3 py-3.5 rounded-2xl text-[14px] font-bold display tracking-wider transition-all active:scale-[0.98] disabled:opacity-25"
-                            style={meetsThreshold ? { background: isCheatDay ? 'var(--bg-elevated)' : `linear-gradient(135deg, ${habit.color}, ${habit.color}dd)`, color: isCheatDay ? 'var(--btc)' : '#000', border: isCheatDay ? '1px solid var(--btc)' : 'none' } : { background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}>
+                            className="btn-primary w-full mt-3 py-3.5 rounded-2xl text-[13px] tracking-widest disabled:opacity-20"
+                            style={meetsThreshold ? { background: isCheatDay ? 'var(--bg-elevated)' : `linear-gradient(135deg, ${habit.color}, ${habit.color}cc)`, color: isCheatDay ? 'var(--btc)' : '#000', border: isCheatDay ? '1px solid var(--btc)' : 'none' } : { background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}>
                             {isToggling ? 'LOGGING...' : isCheatDay ? '🎫 LOG CHEAT DAY' : meetsThreshold ? `LOG ${habit.label.toUpperCase()}` : `ENTER ${habit.unit.toUpperCase()}`}
                           </button>
                         </div>
@@ -495,8 +496,8 @@ export default function SatSlayer() {
                           <button
                             onClick={() => handleSubmitHabit(habit.type)}
                             disabled={isToggling}
-                            className="w-full mt-4 py-4 rounded-2xl text-[15px] font-bold display tracking-wider text-black active:scale-[0.98] transition-all disabled:opacity-40"
-                            style={{ background: `linear-gradient(135deg, ${habit.color}, ${habit.color}cc)` }}>
+                            className="btn-primary w-full mt-4 py-4 rounded-2xl text-[14px] tracking-widest text-black disabled:opacity-40"
+                            style={{ background: `linear-gradient(135deg, ${habit.color}, ${habit.color}bb)` }}>
                             {isToggling ? 'LOGGING...' : habit.type === 'sugar' ? "NO SUGAR TODAY ✅" : "YES — I EXERCISED 💪"}
                           </button>
                         )
@@ -880,16 +881,17 @@ export default function SatSlayer() {
         )}
       </main>
 
-      {/* Bottom nav — sits at bottom of flex layout, not fixed */}
+      {/* Bottom nav */}
       <nav className="flex-shrink-0 bg-[var(--bg)] border-t border-[var(--border)]" style={{ paddingBottom: 'env(safe-area-inset-bottom, 4px)' }}>
-        <div className="max-w-lg mx-auto flex justify-around py-2">
+        <div className="max-w-lg mx-auto flex justify-around py-1.5">
           {([
             { id: 'today' as const, label: 'Today', icon: '⚡' },
             { id: 'weigh-in' as const, label: 'Weigh-in', icon: '⚖️' },
             { id: 'stats' as const, label: 'Stats', icon: '🏆' },
           ]).map((t) => (
             <button key={t.id} onClick={() => { setTab(t.id); setWiResult(null); }}
-              className={`flex flex-col items-center py-1.5 px-5 transition-all ${tab === t.id ? 'text-[var(--btc)]' : 'text-[var(--text-muted)]'}`}>
+              className={`flex flex-col items-center py-2 px-6 rounded-xl transition-all ${tab === t.id ? 'text-[var(--btc)]' : 'text-[var(--text-muted)]'}`}
+              style={tab === t.id ? { background: 'var(--btc-medium)' } : {}}>
               <span className="text-[18px]">{t.icon}</span>
               <span className="text-[9px] mt-0.5 font-semibold tracking-wide">{t.label}</span>
             </button>
