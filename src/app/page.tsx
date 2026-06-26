@@ -223,9 +223,8 @@ export default function SatSlayer() {
       )}
 
       {/* Header */}
-      {/* Status bar background — covers the area behind the notch/Dynamic Island */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-[var(--bg)]" style={{ height: 'env(safe-area-inset-top, 0px)' }} />
-      <header className="sticky z-50 bg-[var(--bg)] border-b border-[var(--border)]" style={{ top: 'env(safe-area-inset-top, 0px)' }}>
+      {/* Header: fixed from very top of screen, content padded below status bar */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-[var(--bg)] border-b border-[var(--border)]" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div className="max-w-lg mx-auto px-5 py-2.5 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <KettlebellLogo size={32} />
@@ -248,7 +247,7 @@ export default function SatSlayer() {
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-5 pt-4">
+      <main className="max-w-lg mx-auto px-5 pt-16">
 
         {/* ═══ TODAY TAB ═══ */}
         {tab === 'today' && (
