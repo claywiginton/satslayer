@@ -212,7 +212,7 @@ export default function SatSlayer() {
   };
 
   return (
-    <div className="flex flex-col relative z-10" style={{ height: '100dvh', paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+    <div className="flex flex-col relative z-10" style={{ height: '100dvh', paddingTop: 'env(safe-area-inset-top, 0px)', overflow: 'hidden' }}>
       {/* Sat reward popup */}
       {showReward && (
         <div className="fixed top-16 left-1/2 -translate-x-1/2 z-[60] sat-pop">
@@ -243,7 +243,7 @@ export default function SatSlayer() {
         </div>
       </header>
 
-      <main ref={mainRef} className="flex-1 overflow-y-auto max-w-lg mx-auto px-5 pt-4 pb-8 w-full" style={{ overscrollBehavior: 'none' }}>
+      <main ref={mainRef} className="flex-1 overflow-y-scroll max-w-lg mx-auto px-5 pt-4 pb-8 w-full" style={{ overscrollBehavior: 'none', WebkitOverflowScrolling: 'touch' }}>
 
         {/* ═══ TODAY TAB ═══ */}
         {tab === 'today' && (
@@ -256,7 +256,7 @@ export default function SatSlayer() {
                   Week {weekNumber} · {todayCount}/{HABITS.length} complete
                   {streaks.length > 0 && (() => {
                     const best = streaks.reduce((a, b) => (a.currentStreak > b.currentStreak ? a : b));
-                    return best.currentStreak > 0 ? <span className="text-[var(--btc)]"> · {best.currentStreak}d streak</span> : null;
+                    return best.currentStreak > 0 ? <span className="text-[var(--green)]"> · {best.currentStreak}d streak</span> : null;
                   })()}
                 </div>
               </div>
@@ -523,7 +523,7 @@ export default function SatSlayer() {
                   const h = HABITS.find((h) => h.type === s.type)!;
                   return (
                     <div key={s.type} className="flex items-center justify-between text-[12px] py-1">
-                      <span className="text-[var(--text-secondary)]">{h.icon} {h.label}: {h.streakMode === 'weekly' ? `${Math.floor(s.currentStreak / 7)}w` : `${s.currentStreak}d`}</span>
+                      <span className="text-[var(--text-secondary)]">{h.label}: {h.streakMode === 'weekly' ? `${Math.floor(s.currentStreak / 7)}w` : `${s.currentStreak}d`}</span>
                       <span className="mono text-[var(--red)] text-[11px]">−{formatSats(s.satsPerCompletion - CONFIG.baseSatsPerHabit)}/day</span>
                     </div>
                   );
@@ -591,10 +591,10 @@ export default function SatSlayer() {
                 {(() => {
                   const sorted = [...weighIns].sort((a, b) => a.weekNumber - b.weekNumber);
                   const weights = sorted.map(w => w.weight);
-                  const maxW = Math.max(...weights, profile.startWeight);
-                  const minW = Math.min(...weights, profile.goalWeight);
+                  const maxW = Math.max(...weights);
+                  const minW = Math.min(...weights);
                   const range = maxW - minW || 1;
-                  const pad = range * 0.1;
+                  const pad = Math.max(range * 0.15, 0.5);
                   const top = maxW + pad;
                   const bot = minW - pad;
                   const totalRange = top - bot;
@@ -801,11 +801,10 @@ export default function SatSlayer() {
                   const h = HABITS.find((hab) => hab.type === s.type)!;
                   return (
                     <div key={s.type} className="flex items-center gap-3.5">
-                      <span className="text-xl">{h.icon}</span>
                       <div className="flex-1">
                         <div className="text-[13px] font-semibold">{h.label}</div>
                         <div className="flex items-center gap-2 mt-0.5">
-                          <span className="mono text-[10px] px-2 py-0.5 rounded-lg font-semibold" style={{ background: `${h.color}12`, color: h.color }}>
+                          <span className="streak-badge" style={{ background: 'var(--btc-medium)', color: 'var(--btc)' }}>
                             {h.streakMode === 'weekly' ? `${Math.floor(s.currentStreak / 7)}w` : `${s.currentStreak}d`}
                           </span>
                           <span className="mono text-[10px] text-[var(--btc)] font-semibold">{s.multiplier}×</span>
