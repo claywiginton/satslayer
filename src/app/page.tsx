@@ -13,7 +13,7 @@ import {
   getPlayerProfile, savePlayerProfile, type PlayerProfile,
 } from '@/lib/db';
 import Onboarding from '@/components/Onboarding';
-import KettlebellLogo from '@/components/KettlebellLogo';
+
 
 function CountdownTimer() {
   const [timeLeft, setTimeLeft] = useState('');
@@ -226,8 +226,8 @@ export default function SatSlayer() {
       <header className="flex-shrink-0 bg-[var(--bg)] border-b border-[var(--border)]">
         <div className="max-w-lg mx-auto px-5 py-2.5 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <KettlebellLogo size={32} />
-            <div className="display text-[13px] tracking-wider">PROOF OF WORK</div>
+            <img src="/logo.png" alt="POW" className="w-8 h-8 rounded-lg" />
+            <div className="text-[13px] font-bold" style={{ letterSpacing: '-0.01em' }}>PROOF OF WORK</div>
           </div>
           <div className="flex items-center gap-2">
             <div className="text-right">

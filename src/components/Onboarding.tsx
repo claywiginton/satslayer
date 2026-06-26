@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { CONFIG, formatSats, satsToUsd } from '@/lib/data';
-import KettlebellLogo from '@/components/KettlebellLogo';
+
 
 interface Props {
   onComplete: (username: string, startWeight: number, telegramChatId?: string, startDate?: string, startPhoto?: string) => Promise<void> | void;
@@ -101,7 +101,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
 
         <div className="relative text-center max-w-sm">
           <div className="flex justify-center mb-6">
-            <KettlebellLogo size={80} />
+            <img src="/logo.png" alt="POW" className="w-20 h-20 rounded-2xl" />
           </div>
           <h1 className="display text-4xl leading-tight mb-4" style={{ color: 'var(--btc)' }}>
             PROOF OF WORK
