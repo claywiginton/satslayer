@@ -48,6 +48,7 @@ export default function SatSlayer() {
   const [profileChecked, setProfileChecked] = useState(false);
   const [profileExists, setProfileExists] = useState(false);
   const [tab, setTab] = useState<'today' | 'weigh-in' | 'stats'>('today');
+  const mainRef = useRef<HTMLElement>(null);
   const [stats, setStats] = useState<PlayerStats | null>(null);
   const [todayLog, setTodayLog] = useState<DayLog | null>(null);
   const [dayLogs, setDayLogs] = useState<DayLog[]>([]);
@@ -234,10 +235,6 @@ export default function SatSlayer() {
               <div className="mono text-[14px] font-semibold text-[var(--btc)]">{formatSats(stats?.totalSatsEarned || 0)}</div>
               <div className="text-[9px] text-[var(--text-muted)]">{btcPrice ? `$${((stats?.totalSatsEarned || 0) / 100000000 * btcPrice).toFixed(2)}` : 'sats earned'}</div>
             </div>
-            <button onClick={() => setWeightUnit(wu === 'kg' ? 'lbs' : 'kg')}
-              className="text-[10px] mono px-2 py-1 rounded-md border border-[var(--border)] text-[var(--text-muted)] active:scale-95 transition-all">
-              {wu.toUpperCase()}
-            </button>
             <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               className="text-[13px] w-7 h-7 rounded-md border border-[var(--border)] flex items-center justify-center active:scale-95 transition-all">
               {theme === 'dark' ? '◐' : '◑'}
@@ -246,7 +243,7 @@ export default function SatSlayer() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto max-w-lg mx-auto px-5 pt-4 pb-8 w-full" style={{ overscrollBehavior: 'none' }}>
+      <main ref={mainRef} className="flex-1 overflow-y-auto max-w-lg mx-auto px-5 pt-4 pb-8 w-full" style={{ overscrollBehavior: 'none' }}>
 
         {/* ═══ TODAY TAB ═══ */}
         {tab === 'today' && (
@@ -255,7 +252,13 @@ export default function SatSlayer() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <div className="text-[32px] font-bold" style={{ letterSpacing: '-0.02em', lineHeight: 1 }}>Day {dayNumber}</div>
-                <div className="text-[13px] text-[var(--text-muted)] mt-1.5">Week {weekNumber} · {todayCount}/{HABITS.length} complete</div>
+                <div className="text-[13px] text-[var(--text-muted)] mt-1.5">
+                  Week {weekNumber} · {todayCount}/{HABITS.length} complete
+                  {streaks.length > 0 && (() => {
+                    const best = streaks.reduce((a, b) => (a.currentStreak > b.currentStreak ? a : b));
+                    return best.currentStreak > 0 ? <span className="text-[var(--btc)]"> · {best.currentStreak}d streak</span> : null;
+                  })()}
+                </div>
               </div>
               {/* Completion ring */}
               <div className="relative w-16 h-16">
@@ -409,16 +412,9 @@ export default function SatSlayer() {
                     <div className={`p-5 ${completed ? 'opacity-70' : ''}`}>
                       {/* Header row */}
                       <div className="flex items-start justify-between mb-1">
-                        <div className="flex items-center gap-3">
-                          {completed ? (
-                            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[13px] font-bold" style={{ background: 'rgba(48,209,88,0.1)', color: 'var(--green)' }}>✓</div>
-                          ) : (
-                            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[12px] font-semibold" style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)' }}>{habit.icon}</div>
-                          )}
-                          <div>
-                            <div className="text-[15px] font-semibold">{habit.label}</div>
-                            <div className="text-[11px] text-[var(--text-muted)]">{habit.description}</div>
-                          </div>
+                        <div>
+                          <div className="text-[15px] font-semibold">{completed ? '✓ ' : ''}{habit.label}</div>
+                          <div className="text-[11px] text-[var(--text-muted)]">{habit.description}</div>
                         </div>
                       </div>
 
@@ -893,7 +889,10 @@ export default function SatSlayer() {
             { id: 'weigh-in' as const, label: 'Weigh-in', icon: '◎' },
             { id: 'stats' as const, label: 'Stats', icon: '◈' },
           ]).map((t) => (
-            <button key={t.id} onClick={() => { setTab(t.id); setWiResult(null); }}
+            <button key={t.id} onClick={() => { 
+              if (tab === t.id) { mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' }); }
+              else { setTab(t.id); setWiResult(null); mainRef.current?.scrollTo({ top: 0 }); }
+            }}
               className={`flex flex-col items-center py-2 px-6 rounded-xl transition-all ${tab === t.id ? 'text-[var(--btc)]' : 'text-[var(--text-muted)]'}`}
               style={tab === t.id ? { background: 'var(--btc-medium)' } : {}}>
               <span className="text-[16px]">{t.icon}</span>
