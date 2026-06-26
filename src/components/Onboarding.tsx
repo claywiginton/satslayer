@@ -391,28 +391,28 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
 
           <div className="space-y-3">
             <div className="card p-4 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ background: '#5eead415' }}>S</div>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ background: 'rgba(142,142,147,0.08)' }}>S</div>
               <div>
                 <div className="font-semibold">8,000 Steps</div>
                 <div className="text-xs text-[var(--text-muted)]">Walk, move, get outside</div>
               </div>
             </div>
             <div className="card p-4 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ background: '#f7931a15' }}>E</div>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ background: 'rgba(142,142,147,0.08)' }}>E</div>
               <div>
                 <div className="font-semibold">Exercise 3×/Week</div>
                 <div className="text-xs text-[var(--text-muted)]">30+ min exercise, 3 days per week</div>
               </div>
             </div>
             <div className="card p-4 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ background: '#818cf815' }}>C</div>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ background: 'rgba(142,142,147,0.08)' }}>C</div>
               <div>
                 <div className="font-semibold">Under {CONFIG.calorieTarget.toLocaleString()} Calories</div>
                 <div className="text-xs text-[var(--text-muted)]">Track it, stay under the line</div>
               </div>
             </div>
             <div className="card p-4 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ background: '#fb923c15' }}>N</div>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ background: 'rgba(142,142,147,0.08)' }}>N</div>
               <div>
                 <div className="font-semibold">No Sugar</div>
                 <div className="text-xs text-[var(--text-muted)]">Zero added sugar — every single day</div>

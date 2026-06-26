@@ -57,10 +57,10 @@ export type HabitType = 'steps' | 'workout' | 'calories' | 'sugar';
 export type StreakMode = 'daily' | 'weekly'; // daily = every day, weekly = X per calendar week
 
 export const HABITS: { type: HabitType; label: string; icon: string; description: string; color: string; inputType: 'number' | 'boolean'; unit: string; threshold: number; thresholdDir: 'gte' | 'lte'; streakMode: StreakMode; weeklyTarget?: number }[] = [
-  { type: 'steps', label: 'Steps', icon: 'S', description: 'Hit 8,000 steps', color: '#5eead4', inputType: 'number', unit: 'steps', threshold: 8000, thresholdDir: 'gte', streakMode: 'daily' },
-  { type: 'workout', label: 'Exercise', icon: 'E', description: '30+ min · 3× per week', color: '#f7931a', inputType: 'boolean', unit: '', threshold: 1, thresholdDir: 'gte', streakMode: 'weekly', weeklyTarget: 3 },
-  { type: 'calories', label: 'Calories', icon: 'C', description: `Under ${CONFIG.calorieTarget.toLocaleString()} cal`, color: '#818cf8', inputType: 'number', unit: 'cal', threshold: CONFIG.calorieTarget, thresholdDir: 'lte', streakMode: 'daily' },
-  { type: 'sugar', label: 'No Sugar', icon: 'N', description: 'No sugar today', color: '#fb923c', inputType: 'boolean', unit: '', threshold: 1, thresholdDir: 'gte', streakMode: 'daily' },
+  { type: 'steps', label: 'Steps', icon: 'S', description: 'Hit 8,000 steps', color: '#8e8e93', inputType: 'number', unit: 'steps', threshold: 8000, thresholdDir: 'gte', streakMode: 'daily' },
+  { type: 'workout', label: 'Exercise', icon: 'E', description: '30+ min · 3× per week', color: '#8e8e93', inputType: 'boolean', unit: '', threshold: 1, thresholdDir: 'gte', streakMode: 'weekly', weeklyTarget: 3 },
+  { type: 'calories', label: 'Calories', icon: 'C', description: `Under ${CONFIG.calorieTarget.toLocaleString()} cal`, color: '#8e8e93', inputType: 'number', unit: 'cal', threshold: CONFIG.calorieTarget, thresholdDir: 'lte', streakMode: 'daily' },
+  { type: 'sugar', label: 'No Sugar', icon: 'N', description: 'No sugar today', color: '#8e8e93', inputType: 'boolean', unit: '', threshold: 1, thresholdDir: 'gte', streakMode: 'daily' },
 ];
 
 export interface Milestone {
