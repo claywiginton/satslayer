@@ -11,7 +11,7 @@ const config: CapacitorConfig = {
   },
   ios: {
     scheme: 'Proof of Work',
-    contentInset: 'never',
+    contentInset: 'automatic',
     backgroundColor: '#08080a',
     preferredContentMode: 'mobile',
     scrollEnabled: true,
