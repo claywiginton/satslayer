@@ -124,12 +124,12 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
               <div className="text-[9px] text-[var(--text-muted)]">weeks</div>
             </div>
             <div className="card p-3 text-center">
-              <div className="text-lg mb-1">🎯</div>
+              <div className="text-lg mb-1">●</div>
               <div className="mono text-[14px] font-semibold">{CONFIG.goalWeight}</div>
               <div className="text-[9px] text-[var(--text-muted)]">kg goal</div>
             </div>
             <div className="card p-3 text-center">
-              <div className="text-lg mb-1">⚡</div>
+              <div className="text-lg mb-1">◉</div>
               <div className="mono text-[14px] font-semibold">4</div>
               <div className="text-[9px] text-[var(--text-muted)]">daily habits</div>
             </div>
@@ -197,7 +197,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
             Back
           </button>
 
-          <div className="text-3xl mb-2">⚡</div>
+          <div className="text-3xl mb-2">◉</div>
           <h2 className="display text-2xl mb-1">CONNECT STRIKE</h2>
           <p className="text-sm text-[var(--text-muted)] mb-6">
             Your sats will be sent directly to your Strike wallet when you complete challenges.
@@ -247,7 +247,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
             </div>
 
             <div>
-              <label className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] block mb-2">📸 Day 1 progress photo</label>
+              <label className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] block mb-2">Day 1 progress photo</label>
               {startPhoto ? (
                 <div className="relative">
                   <img src={startPhoto} alt="Day 1" className="w-full rounded-xl border border-[var(--border)]" style={{ maxHeight: '200px', objectFit: 'cover' }} />
@@ -354,7 +354,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
 
           {tgConnected ? (
             <div className="card p-4 mb-4 text-center" style={{ borderColor: 'rgba(52,211,153,0.3)' }}>
-              <div className="text-lg mb-1">✅</div>
+              <div className="text-lg mb-1">✓</div>
               <div className="text-[13px] font-semibold" style={{ color: 'var(--green)' }}>Connected{tgName ? ` as ${tgName}` : ''}!</div>
               <div className="text-[11px] text-[var(--text-muted)] mt-1">You&apos;ll get reminders via Telegram</div>
             </div>
@@ -391,28 +391,28 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
 
           <div className="space-y-3">
             <div className="card p-4 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ background: '#22c55e15' }}>👟</div>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ background: '#5eead415' }}>S</div>
               <div>
                 <div className="font-semibold">8,000 Steps</div>
                 <div className="text-xs text-[var(--text-muted)]">Walk, move, get outside</div>
               </div>
             </div>
             <div className="card p-4 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ background: '#f7931a15' }}>💪</div>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ background: '#f7931a15' }}>E</div>
               <div>
                 <div className="font-semibold">Exercise 3×/Week</div>
                 <div className="text-xs text-[var(--text-muted)]">30+ min exercise, 3 days per week</div>
               </div>
             </div>
             <div className="card p-4 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ background: '#a855f715' }}>🍽</div>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ background: '#818cf815' }}>C</div>
               <div>
                 <div className="font-semibold">Under {CONFIG.calorieTarget.toLocaleString()} Calories</div>
                 <div className="text-xs text-[var(--text-muted)]">Track it, stay under the line</div>
               </div>
             </div>
             <div className="card p-4 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ background: '#ef444415' }}>🚫</div>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ background: '#fb923c15' }}>N</div>
               <div>
                 <div className="font-semibold">No Sugar</div>
                 <div className="text-xs text-[var(--text-muted)]">Zero added sugar — every single day</div>
@@ -536,15 +536,15 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
             <div className="text-[10px] font-semibold tracking-widest uppercase text-[var(--btc)] mb-3">How this works</div>
             <div className="space-y-3 text-[12px] text-[var(--text-secondary)] leading-relaxed">
               <div className="flex gap-3">
-                <span className="text-base shrink-0 mt-0.5">🍽</span>
+                <span className="text-base shrink-0 mt-0.5">C</span>
                 <div><span className="text-[var(--text)] font-semibold">2,500 cal/day</span> creates a 300–500 cal deficit from your maintenance (~3,000 cal). That alone = 0.3–0.5 kg/week.</div>
               </div>
               <div className="flex gap-3">
-                <span className="text-base shrink-0 mt-0.5">👟</span>
+                <span className="text-base shrink-0 mt-0.5">S</span>
                 <div><span className="text-[var(--text)] font-semibold">8,000 steps/day</span> burns ~300–500 additional calories. Combined with diet = 0.4–0.7 kg/week.</div>
               </div>
               <div className="flex gap-3">
-                <span className="text-base shrink-0 mt-0.5">💪</span>
+                <span className="text-base shrink-0 mt-0.5">E</span>
                 <div><span className="text-[var(--text)] font-semibold">5 workouts/week</span> adds another 200–400 cal burn per session and builds muscle, which increases metabolism. Total projected = <span className="text-[var(--green)] font-semibold">0.7–1.0 kg/week</span>.</div>
               </div>
             </div>
@@ -649,7 +649,7 @@ export default function Onboarding({ onComplete, claimed = false, onReset }: Pro
           </div>
 
           <div className="card p-4 mb-6" style={{ background: 'var(--bg)' }}>
-            <div className="text-[10px] font-semibold tracking-widest uppercase text-[var(--btc)] mb-2">📞 Weekly check-in</div>
+            <div className="text-[10px] font-semibold tracking-widest uppercase text-[var(--btc)] mb-2">Weekly check-in</div>
             <p className="text-[12px] text-[var(--text-secondary)]">Optional call with Clay every Sunday to review the week, talk through struggles, and plan ahead. Not required — but it helps.</p>
           </div>
 

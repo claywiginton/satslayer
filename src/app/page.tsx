@@ -37,7 +37,7 @@ function CountdownTimer() {
 
   return (
     <div className="mb-4 py-2.5 px-4 rounded-xl flex items-center justify-between" style={{ background: 'rgba(248,113,113,0.06)', border: '1px solid rgba(248,113,113,0.12)' }}>
-      <span className="text-[11px] text-[var(--red)]">⏰ Streak resets in</span>
+      <span className="text-[11px] text-[var(--red)]">Streak resets in</span>
       <span className="mono text-[13px] font-bold text-[var(--red)]">{timeLeft}</span>
     </div>
   );
@@ -240,7 +240,7 @@ export default function SatSlayer() {
             </button>
             <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               className="text-[13px] w-7 h-7 rounded-md border border-[var(--border)] flex items-center justify-center active:scale-95 transition-all">
-              {theme === 'dark' ? '☀️' : '🌙'}
+              {theme === 'dark' ? '◐' : '◑'}
             </button>
           </div>
         </div>
@@ -273,7 +273,7 @@ export default function SatSlayer() {
 
             {todayComplete && (
               <div className="mb-5 py-3 px-4 rounded-2xl text-center" style={{ background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.15)' }}>
-                <div className="text-[13px] font-semibold" style={{ color: 'var(--green)' }}>✨ All habits complete — you earned {formatSats(totalDailyPotential)} sats today</div>
+                <div className="text-[13px] font-semibold" style={{ color: 'var(--green)' }}>All habits complete — you earned {formatSats(totalDailyPotential)} sats today</div>
               </div>
             )}
 
@@ -410,7 +410,11 @@ export default function SatSlayer() {
                       {/* Header row */}
                       <div className="flex items-start justify-between mb-1">
                         <div className="flex items-center gap-3">
-                          <span className="text-2xl">{completed ? '✅' : habit.icon}</span>
+                          {completed ? (
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[13px] font-bold" style={{ background: 'rgba(52,211,153,0.12)', color: 'var(--green)' }}>✓</div>
+                          ) : (
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[13px] font-bold" style={{ background: `${habit.color}12`, color: habit.color }}>{habit.icon}</div>
+                          )}
                           <div>
                             <div className="text-[15px] font-semibold">{habit.label}</div>
                             <div className="text-[11px] text-[var(--text-muted)]">{habit.description}</div>
@@ -422,7 +426,7 @@ export default function SatSlayer() {
                       <div className="flex items-center gap-2 mt-2.5 mb-1">
                         {streak && streak.currentStreak > 0 && (
                           <span className="streak-badge" style={{ background: `${habit.color}15`, color: habit.color }}>
-                            🔥 {isWeekly ? `${Math.floor(streak.currentStreak / 7)}w` : `${streak.currentStreak}d`} · {streak.multiplier}×
+                            {isWeekly ? `${Math.floor(streak.currentStreak / 7)}w` : `${streak.currentStreak}d`} streak · {streak.multiplier}×
                           </span>
                         )}
                         {isWeekly && (
@@ -439,7 +443,7 @@ export default function SatSlayer() {
                       {completed && (
                         <div className="mt-3 py-2.5 px-4 rounded-xl text-center" style={{ background: 'rgba(52,211,153,0.06)' }}>
                           <span className="mono text-[13px] text-[var(--green)]">
-                            {habit.type === 'steps' ? `${todayVal.toLocaleString()} steps logged` : habit.type === 'calories' ? (getCalorieStatus(todayVal) === 'cheat' ? `🎫 ${todayVal.toLocaleString()} cal — cheat day` : `${todayVal.toLocaleString()} cal logged`) : habit.type === 'sugar' ? (todayLog && getCalorieStatus(todayLog.calories) === 'cheat' ? '🎫 Cheat day — streak safe' : 'No sugar today ✅') : 'Exercise complete'}
+                            {habit.type === 'steps' ? `${todayVal.toLocaleString()} steps logged` : habit.type === 'calories' ? (getCalorieStatus(todayVal) === 'cheat' ? `${todayVal.toLocaleString()} cal — cheat day` : `${todayVal.toLocaleString()} cal logged`) : habit.type === 'sugar' ? (todayLog && getCalorieStatus(todayLog.calories) === 'cheat' ? 'Cheat day — streak safe' : 'No sugar today') : 'Exercise complete'}
                           </span>
                         </div>
                       )}
@@ -472,7 +476,7 @@ export default function SatSlayer() {
 
                           {inputVal && isCheatDay && (
                             <div className="mt-2 text-[11px] text-[var(--btc)] text-center">
-                              🎫 Cheat day — streak preserved, 0 sats for calories ({cheatDayInfo.totalEarned - cheatDayInfo.totalUsed - 1} remaining after this)
+                              Cheat day — streak preserved, 0 sats for calories ({cheatDayInfo.totalEarned - cheatDayInfo.totalUsed - 1} remaining after this)
                             </div>
                           )}
 
@@ -481,7 +485,7 @@ export default function SatSlayer() {
                             disabled={!meetsThreshold || isToggling}
                             className="btn-primary w-full mt-3 py-3.5 rounded-2xl text-[13px] tracking-widest disabled:opacity-20"
                             style={meetsThreshold ? { background: isCheatDay ? 'var(--bg-elevated)' : `linear-gradient(135deg, ${habit.color}, ${habit.color}cc)`, color: isCheatDay ? 'var(--btc)' : '#000', border: isCheatDay ? '1px solid var(--btc)' : 'none' } : { background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}>
-                            {isToggling ? 'LOGGING...' : isCheatDay ? '🎫 LOG CHEAT DAY' : meetsThreshold ? `LOG ${habit.label.toUpperCase()}` : `ENTER ${habit.unit.toUpperCase()}`}
+                            {isToggling ? 'LOGGING...' : isCheatDay ? 'LOG CHEAT DAY' : meetsThreshold ? `LOG ${habit.label.toUpperCase()}` : `ENTER ${habit.unit.toUpperCase()}`}
                           </button>
                         </div>
                       )}
@@ -490,7 +494,7 @@ export default function SatSlayer() {
                       {!completed && habit.inputType === 'boolean' && (
                         isWeekly && weeklyCount >= (habit.weeklyTarget || 3) ? (
                           <div className="mt-3 py-3 px-4 rounded-xl text-center" style={{ background: 'rgba(52,211,153,0.06)' }}>
-                            <span className="text-[13px] text-[var(--green)]">✅ {weeklyCount}/{habit.weeklyTarget} done this week — rest day earned</span>
+                            <span className="text-[13px] text-[var(--green)]">{weeklyCount}/{habit.weeklyTarget} done this week — rest day earned</span>
                           </div>
                         ) : (
                           <button
@@ -498,7 +502,7 @@ export default function SatSlayer() {
                             disabled={isToggling}
                             className="btn-primary w-full mt-4 py-4 rounded-2xl text-[14px] tracking-widest text-black disabled:opacity-40"
                             style={{ background: `linear-gradient(135deg, ${habit.color}, ${habit.color}bb)` }}>
-                            {isToggling ? 'LOGGING...' : habit.type === 'sugar' ? "NO SUGAR TODAY ✅" : "YES — I EXERCISED 💪"}
+                            {isToggling ? 'LOGGING...' : habit.type === 'sugar' ? "NO SUGAR TODAY" : "YES — I EXERCISED"}
                           </button>
                         )
                       )}
@@ -518,7 +522,7 @@ export default function SatSlayer() {
             {/* Streak danger zone */}
             {streaks.some((s) => s.currentStreak >= 4) && !todayComplete && (
               <div className="card p-4 mb-5" style={{ borderColor: 'rgba(248,113,113,0.15)' }}>
-                <div className="text-[10px] uppercase tracking-widest text-[var(--red)] font-semibold mb-2">⚠️ Don&apos;t break the chain</div>
+                <div className="text-[10px] uppercase tracking-widest text-[var(--red)] font-semibold mb-2">Don&apos;t break the chain</div>
                 {streaks.filter((s) => s.currentStreak >= 4).map((s) => {
                   const h = HABITS.find((h) => h.type === s.type)!;
                   return (
@@ -579,14 +583,14 @@ export default function SatSlayer() {
         {tab === 'weigh-in' && (
           <div className="animate-in">
             <div className="text-center pt-2 mb-6">
-              <div className="text-3xl mb-2">⚖️</div>
+              <div className="text-[14px] font-bold text-[var(--text-muted)] mb-2 display tracking-widest">WEIGH-IN</div>
               <h2 className="display text-[22px] mb-1">Week {weekNumber} Weigh-in</h2>
               <p className="text-[12px] text-[var(--text-muted)]">Weigh in Monday or Tuesday, earn sats</p>
             </div>
 
             {alreadyWeighed && !wiResult ? (
               <div className="card p-8 text-center">
-                <div className="text-2xl mb-3">✅</div>
+                <div className="text-[14px] font-bold text-[var(--green)] mb-3 display tracking-widest">LOGGED</div>
                 <div className="display text-[16px] text-[var(--green)] mb-1">Logged this week</div>
                 <p className="text-[12px] text-[var(--text-muted)]">Next weigh-in: Week {weekNumber + 1}</p>
               </div>
@@ -595,7 +599,7 @@ export default function SatSlayer() {
                 <div className="text-3xl mb-3">🎉</div>
                 <div className="display text-xl text-[var(--btc)] mb-1">+{formatSats(wiResult.sats)} sats</div>
                 {wiResult.milestones.map((m) => (
-                  <div key={m} className="mt-4 py-2.5 px-4 rounded-xl text-[13px] font-bold display text-black" style={{ background: 'linear-gradient(135deg, var(--btc), #e8820e)' }}>🏆 {m}</div>
+                  <div key={m} className="mt-4 py-2.5 px-4 rounded-xl text-[13px] font-bold display text-black" style={{ background: 'linear-gradient(135deg, var(--btc), #e8820e)' }}>{m}</div>
                 ))}
               </div>
             ) : (
@@ -615,7 +619,7 @@ export default function SatSlayer() {
 
                   {/* Scale photo */}
                   <div className="mt-4">
-                    <div className="text-[10px] font-semibold tracking-widest uppercase text-[var(--text-muted)] mb-2">📸 Photo of the scale</div>
+                    <div className="text-[10px] font-semibold tracking-widest uppercase text-[var(--text-muted)] mb-2">Scale photo</div>
                     {wiPhoto ? (
                       <div className="relative">
                         <img src={wiPhoto} alt="Scale" className="w-full rounded-2xl border border-[var(--border)]" style={{ maxHeight: '200px', objectFit: 'cover' }} />
@@ -720,7 +724,7 @@ export default function SatSlayer() {
                         <div className="text-[13px] font-semibold">{h.label}</div>
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="mono text-[10px] px-2 py-0.5 rounded-lg font-semibold" style={{ background: `${h.color}12`, color: h.color }}>
-                            🔥 {h.streakMode === 'weekly' ? `${Math.floor(s.currentStreak / 7)}w` : `${s.currentStreak}d`}
+                            {h.streakMode === 'weekly' ? `${Math.floor(s.currentStreak / 7)}w` : `${s.currentStreak}d`}
                           </span>
                           <span className="mono text-[10px] text-[var(--btc)] font-semibold">{s.multiplier}×</span>
                           <span className="text-[10px] text-[var(--text-muted)]">Best: {h.streakMode === 'weekly' ? `${Math.floor(s.longestStreak / 7)}w` : `${s.longestStreak}d`}</span>
@@ -740,7 +744,7 @@ export default function SatSlayer() {
                   const hit = stats.milestonesHit.includes(m.label);
                   return (
                     <div key={m.label} className={`flex items-center justify-between py-2.5 px-3.5 rounded-xl ${hit ? 'opacity-40' : ''}`} style={{ background: 'var(--bg)' }}>
-                      <div className="flex items-center gap-2.5"><span className="text-base">{hit ? '✅' : '🎯'}</span><div><div className="text-[12px] font-semibold">{m.label}</div><div className="text-[10px] text-[var(--text-muted)]">{dw(m.weight)} {wu}</div></div></div>
+                      <div className="flex items-center gap-2.5"><span className="text-base">{hit ? '●' : '○'}</span><div><div className="text-[12px] font-semibold">{m.label}</div><div className="text-[10px] text-[var(--text-muted)]">{dw(m.weight)} {wu}</div></div></div>
                       <div className="mono text-[12px]" style={{ color: hit ? 'var(--green)' : 'var(--btc)' }}>{hit ? 'CLAIMED' : `+${formatSats(m.sats)}`}</div>
                     </div>
                   );
@@ -885,15 +889,15 @@ export default function SatSlayer() {
       <nav className="flex-shrink-0 bg-[var(--bg)] border-t border-[var(--border)]" style={{ paddingBottom: 'env(safe-area-inset-bottom, 4px)' }}>
         <div className="max-w-lg mx-auto flex justify-around py-1.5">
           {([
-            { id: 'today' as const, label: 'Today', icon: '⚡' },
-            { id: 'weigh-in' as const, label: 'Weigh-in', icon: '⚖️' },
-            { id: 'stats' as const, label: 'Stats', icon: '🏆' },
+            { id: 'today' as const, label: 'Today', icon: '◉' },
+            { id: 'weigh-in' as const, label: 'Weigh-in', icon: '◎' },
+            { id: 'stats' as const, label: 'Stats', icon: '◈' },
           ]).map((t) => (
             <button key={t.id} onClick={() => { setTab(t.id); setWiResult(null); }}
               className={`flex flex-col items-center py-2 px-6 rounded-xl transition-all ${tab === t.id ? 'text-[var(--btc)]' : 'text-[var(--text-muted)]'}`}
               style={tab === t.id ? { background: 'var(--btc-medium)' } : {}}>
-              <span className="text-[18px]">{t.icon}</span>
-              <span className="text-[9px] mt-0.5 font-semibold tracking-wide">{t.label}</span>
+              <span className="text-[16px]">{t.icon}</span>
+              <span className="text-[9px] mt-0.5 font-semibold tracking-widest uppercase">{t.label}</span>
             </button>
           ))}
         </div>
