@@ -243,7 +243,8 @@ export default function SatSlayer() {
         </div>
       </header>
 
-      <main ref={mainRef} className="flex-1 max-w-lg mx-auto px-5 pt-4 pb-8 w-full" style={{ overflowY: tab === 'weigh-in' ? 'hidden' : 'scroll', overscrollBehavior: 'none', WebkitOverflowScrolling: 'touch' }}>
+      <main ref={mainRef} className="flex-1 max-w-lg mx-auto px-5 pt-4 pb-8 w-full" style={{ overflowY: 'auto', overscrollBehavior: 'none', WebkitOverflowScrolling: 'touch' }}>
+        {/* Prevent body scroll on touch for iOS */}
 
         {/* ═══ TODAY TAB ═══ */}
         {tab === 'today' && (
