@@ -16,6 +16,7 @@ export const CONFIG = {
   cheatDayLockoutDays: 30,
   cheatDayFrequency: 30,
   cheatDayCalorieMax: 3500, // Max calories on a cheat day (above this = streak breaks)
+  bonusCheatDays: [{ name: 'Bennet Birthday', count: 1 }], // one-time bonus cheat days
 
   // Base sats per habit (before multiplier)
   baseSatsPerHabit: 50,
@@ -119,7 +120,8 @@ export function getCheatDayInfo(dayNumber: number, usedCheatDays: number): {
 
   // After lockout: first cheat day available immediately, then 1 more every cheatDayFrequency days
   const daysAfterLockout = dayNumber - cheatDayLockoutDays;
-  const totalEarned = 1 + Math.floor((daysAfterLockout - 1) / cheatDayFrequency);
+  const bonusTotal = CONFIG.bonusCheatDays.reduce((sum, b) => sum + b.count, 0);
+  const totalEarned = 1 + Math.floor((daysAfterLockout - 1) / cheatDayFrequency) + bonusTotal;
   const available = totalEarned > usedCheatDays;
   const nextEarnDay = cheatDayLockoutDays + 1 + (totalEarned * cheatDayFrequency);
 
